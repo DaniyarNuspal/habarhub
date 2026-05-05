@@ -205,16 +205,25 @@ export default function App() {
     return true;
   }
 
-  function handleDeleteListing(id) {
+  async function handleDeleteListing(id) {
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', currentUserId);
+
+    if (error) {
+      console.error('删除失败:', error);
+      return;
+    }
+
     const nextFavorites = favorites.filter((favoriteId) => String(favoriteId) !== String(id));
     window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
     setFavorites(nextFavorites);
     saveStoredFavorites(nextFavorites);
 
     setListings((currentListings) =>
-      currentListings.filter(
-        (item) => String(item.id) !== String(id) || item.userId !== currentUserId
-      )
+      currentListings.filter((item) => String(item.id) !== String(id))
     );
   }
 
