@@ -84,7 +84,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
   };
 
   async function handleShare(item) {
-    const url = `${window.location.origin}/listing/${item.id}`;
+    const url = `${window.location.origin}/#/listing/${item.id}`;
     const title = item.title[language];
     const price = formatPrice(item.price, item.currency, language);
     const locationLabel = item.location?.trim();
