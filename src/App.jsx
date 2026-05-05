@@ -10,6 +10,8 @@ import { saveStoredFavorites, toggleFavorite } from './utils/favorites';
 import { getUserId } from './utils/user';
 import { supabase } from './supabase'
 
+const FAVORITES_STORAGE_KEY = 'favorites';
+
 function toLocalizedText(value) {
   if (value && typeof value === 'object') {
     return {
@@ -38,7 +40,7 @@ export default function App() {
   });
   const [favorites, setFavorites] = useState(() => {
     try {
-      const saved = window.localStorage.getItem('favorites');
+      const saved = window.localStorage.getItem(FAVORITES_STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       return Array.isArray(parsed)
         ? parsed.map((value) => (value == null ? '' : String(value))).filter(Boolean)
@@ -205,6 +207,7 @@ export default function App() {
 
   function handleDeleteListing(id) {
     const nextFavorites = favorites.filter((favoriteId) => String(favoriteId) !== String(id));
+    window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
     setFavorites(nextFavorites);
     saveStoredFavorites(nextFavorites);
 
@@ -218,6 +221,7 @@ export default function App() {
   function handleToggleFavorite(id) {
     setFavorites((currentFavorites) => {
       const nextFavorites = toggleFavorite(currentFavorites, id);
+      window.localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(nextFavorites));
       saveStoredFavorites(nextFavorites);
       return nextFavorites;
     });
