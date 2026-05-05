@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ListingImage from '../components/ListingImage';
 import { defaultLanguage, translations } from '../i18n/translations';
+import { supabase } from '../supabase';
 import { formatDate, formatPrice } from '../utils/format';
 
 function normalizePhoneForWhatsApp(value) {
@@ -30,6 +31,50 @@ function normalizeGalleryImages(item) {
   return item.image ? [item.image] : [];
 }
 
+function toLocalizedText(value) {
+  if (value && typeof value === 'object') {
+    return {
+      zh: value.zh || value.en || '',
+      ru: value.ru || value.zh || '',
+      kk: value.kk || value.zh || '',
+      en: value.en || value.zh || ''
+    };
+  }
+
+  const text = typeof value === 'string' ? value : '';
+  return {
+    zh: text,
+    ru: text,
+    kk: text,
+    en: text
+  };
+}
+
+function mapPostToListing(item) {
+  return {
+    ...item,
+    title: toLocalizedText(item.title),
+    description: toLocalizedText(item.description),
+    createdAt: item.created_at || item.createdAt || item.updated_at || new Date().toISOString(),
+    updatedAt: item.updated_at || item.updatedAt || item.created_at || new Date().toISOString(),
+    category: item.category || 'housing',
+    location: item.location || '',
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    images: Array.isArray(item.images)
+      ? item.images
+      : item.image
+        ? [item.image]
+        : [],
+    image: item.image || item.images?.[0] || '',
+    phone: item.phone || '',
+    whatsapp: item.whatsapp || '',
+    currency: item.currency || '₸',
+    userId: item.userId || item.user_id || '',
+    isUserCreated: Boolean(item.isUserCreated || item.userId || item.user_id),
+    featured: Boolean(item.featured)
+  };
+}
+
 export default function ListingDetailPage({
   favorites,
   language,
@@ -38,7 +83,11 @@ export default function ListingDetailPage({
   onToggleFavorite
 }) {
   const { id } = useParams();
-  const item = listings.find((entry) => String(entry.id) === String(id));
+  const localItem = listings.find((entry) => String(entry.id) === String(id));
+  const [remoteItem, setRemoteItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMissing, setIsMissing] = useState(false);
+  const item = localItem || remoteItem;
   const galleryImages = normalizeGalleryImages(item);
   const [selectedImage, setSelectedImage] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -47,6 +96,52 @@ export default function ListingDetailPage({
   useEffect(() => {
     document.title = 'HabarHub - 哈百通';
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadListing() {
+      if (localItem) {
+        setRemoteItem(null);
+        setIsMissing(false);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setIsMissing(false);
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (error || !data) {
+        if (error) {
+          console.warn('Failed to fetch listing detail:', error);
+        }
+        setRemoteItem(null);
+        setIsMissing(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setRemoteItem(mapPostToListing(data));
+      setIsMissing(false);
+      setIsLoading(false);
+    }
+
+    loadListing();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, localItem]);
 
   useEffect(() => {
     setSelectedImage(galleryImages[0] || '');
@@ -64,16 +159,30 @@ export default function ListingDetailPage({
     return () => window.clearTimeout(timer);
   }, [copyStatus]);
 
-  if (!item) {
+  if (isLoading) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-6">
         <div className="w-full rounded-[28px] bg-white p-8 text-center shadow-soft">
-          <p className="text-base font-semibold text-slate-900">Listing not found</p>
+          <p className="text-base font-semibold text-slate-900">
+            {translations[language].detailLoading}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!item || isMissing) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-6">
+        <div className="w-full rounded-[28px] bg-white p-8 text-center shadow-soft">
+          <p className="text-base font-semibold text-slate-900">
+            {translations[language].listingUnavailable}
+          </p>
           <Link
             to="/"
             className="mt-4 inline-flex rounded-2xl bg-[#16A34A] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15803D]"
           >
-            {translations[defaultLanguage].backHome}
+            {translations[language].backHome || translations[defaultLanguage].backHome}
           </Link>
         </div>
       </div>
