@@ -209,8 +209,7 @@ export default function App() {
     const { error } = await supabase
       .from('posts')
       .delete()
-      .eq('id', id)
-      .eq('user_id', currentUserId);
+      .eq('id', id);
 
     if (error) {
       console.error('删除失败:', error);
@@ -225,6 +224,8 @@ export default function App() {
     setListings((currentListings) =>
       currentListings.filter((item) => String(item.id) !== String(id))
     );
+
+    await refreshListings();
   }
 
   function handleToggleFavorite(id) {
