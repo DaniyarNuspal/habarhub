@@ -193,6 +193,7 @@ export default function ListingDetailPage({
   const location = item.location?.trim() || t.locationMissing;
   const createdAt = item.createdAt || item.postedAt;
   const isFavorite = favorites.some((favoriteId) => String(favoriteId) === String(item.id));
+  const hasRealImage = galleryImages.length > 0 || Boolean(item.image);
   const selectedImageIndex = Math.max(
     0,
     galleryImages.findIndex((image) => image === selectedImage)
@@ -292,20 +293,31 @@ export default function ListingDetailPage({
     <div className="mx-auto min-h-screen max-w-md bg-slate-100 pb-10">
       <div className="relative">
         <div className="bg-slate-100 px-2 pt-2">
-          <button
-            type="button"
-            onClick={() => openPreview(selectedImage || galleryImages[0])}
-            className="block aspect-[4/3] w-full overflow-hidden rounded-[28px]"
-          >
-            <ListingImage
-              src={selectedImage || galleryImages[0]}
-              category={item.category}
-              alt={typeof item.title === 'string' ? item.title : item.title?.[language]}
-              className="h-full w-full object-cover"
-            />
-          </button>
+          {hasRealImage ? (
+            <button
+              type="button"
+              onClick={() => openPreview(selectedImage || galleryImages[0])}
+              className="block aspect-[4/3] w-full overflow-hidden rounded-[28px]"
+            >
+              <ListingImage
+                src={selectedImage || galleryImages[0]}
+                category={item.category}
+                alt={typeof item.title === 'string' ? item.title : item.title?.[language]}
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ) : (
+            <div className="aspect-[4/3] overflow-hidden rounded-[28px]">
+              <ListingImage
+                src=""
+                category={item.category}
+                alt={typeof item.title === 'string' ? item.title : item.title?.[language]}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
 
-          {galleryImages.length > 1 ? (
+          {hasRealImage && galleryImages.length > 1 ? (
             <div className="mx-auto mt-2 max-w-full overflow-hidden">
               <div className="box-border flex gap-2 overflow-x-auto pb-1 pr-6">
                 {galleryImages.map((image, index) => {

@@ -123,6 +123,9 @@ export default function App() {
   }, [storageError]);
 
   async function handleCreateListing(values) {
+    const nextImages = Array.isArray(values.images) ? values.images.filter(Boolean) : [];
+    const nextCoverImage = nextImages[0] || values.image || null;
+
     const { data, error } = await supabase
       .from('posts')
       .insert([
@@ -132,8 +135,8 @@ export default function App() {
           category: values.category,
           location: values.location,
           tags: values.tags,
-          images: values.images,
-          image: values.image,
+          images: nextImages,
+          image: nextCoverImage,
           price: values.price,
           phone: values.phone,
           whatsapp: values.whatsapp,
@@ -165,7 +168,7 @@ export default function App() {
     }
 
     const nextImages = Array.isArray(values.images) ? values.images.filter(Boolean) : [];
-    const nextCoverImage = nextImages[0] || values.image || existingListing.image || '';
+    const nextCoverImage = nextImages[0] || values.image || null;
 
     const { data, error } = await supabase
       .from('posts')
