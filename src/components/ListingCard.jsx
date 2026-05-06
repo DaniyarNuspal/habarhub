@@ -81,17 +81,12 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
         ) : null}
 
         <div className="space-y-2">
-          <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2">
             <h3 className={`${hasImage ? 'max-h-12' : 'max-h-14'} overflow-hidden text-base font-semibold leading-6 text-slate-900`}>
               {title}
             </h3>
-            <div className="shrink-0 rounded-2xl bg-amber-50 px-3 py-2 text-right">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-amber-700">
-                {labels.priceLabel}
-              </p>
-              <p className="text-sm font-extrabold text-amber-900">
-                {formatPrice(item.price, 'KZT', language)}
-              </p>
+            <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900">
+              {formatPrice(item.price, item.currency || 'KZT', language)}
             </div>
           </div>
 

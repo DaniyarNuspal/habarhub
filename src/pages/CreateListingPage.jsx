@@ -13,8 +13,10 @@ const initialForm = {
   description: '',
   location: '',
   price: '',
+  priceNegotiable: true,
   phone: '',
   whatsapp: '',
+  whatsappSameAsPhone: false,
   image: '',
   images: [],
   tags: []
@@ -95,9 +97,14 @@ export default function CreateListingPage({
       category: editingListing.category || 'housing',
       description: editingListing.description?.zh || editingListing.description?.en || '',
       location: editingListing.location || '',
-      price: String(editingListing.price ?? ''),
+      price: editingListing.price === null || editingListing.price === undefined ? '' : String(editingListing.price),
+      priceNegotiable: editingListing.price === null || editingListing.price === undefined || editingListing.price === '',
       phone: editingListing.phone || '',
       whatsapp: editingListing.whatsapp || '',
+      whatsappSameAsPhone:
+        Boolean(editingListing.phone) &&
+        Boolean(editingListing.whatsapp) &&
+        editingListing.phone === editingListing.whatsapp,
       image: editingListing.image || '',
       images: Array.isArray(editingListing.images) && editingListing.images.length > 0
         ? editingListing.images
@@ -119,10 +126,18 @@ export default function CreateListingPage({
         ? formatKazakhPhone(event.target.value)
         : event.target.value;
 
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [name]: value
-    }));
+    setFormValues((currentValues) => {
+      const nextValues = {
+        ...currentValues,
+        [name]: value
+      };
+
+      if (name === 'phone' && currentValues.whatsappSameAsPhone) {
+        nextValues.whatsapp = value;
+      }
+
+      return nextValues;
+    });
     setErrors((currentErrors) => {
       const nextErrors = {
         ...currentErrors,
@@ -317,6 +332,31 @@ export default function CreateListingPage({
     return Object.keys(nextErrors).length === 0;
   }
 
+  function handlePriceNegotiableChange(event) {
+    const checked = event.target.checked;
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      priceNegotiable: checked,
+      price: checked ? '' : currentValues.price
+    }));
+  }
+
+  function handleWhatsappSameAsPhoneChange(event) {
+    const checked = event.target.checked;
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      whatsappSameAsPhone: checked,
+      whatsapp: checked ? currentValues.phone : currentValues.whatsapp
+    }));
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      whatsapp: '',
+      phone: ''
+    }));
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (isSubmitting || !validateForm()) {
@@ -333,6 +373,7 @@ export default function CreateListingPage({
 
       const updated = await onUpdateListing(editingListing.id, {
         ...formValues,
+        price: formValues.priceNegotiable || !formValues.price.trim() ? null : Number(formValues.price),
         image: formValues.images[0] || formValues.image || ''
       });
       if (!updated) {
@@ -354,6 +395,7 @@ export default function CreateListingPage({
 
     const created = await onCreateListing({
       ...formValues,
+      price: formValues.priceNegotiable || !formValues.price.trim() ? null : Number(formValues.price),
       images: Array.isArray(formValues.images) ? formValues.images.filter(Boolean) : [],
       image: formValues.images[0] || formValues.image || ''
     });
@@ -586,7 +628,17 @@ export default function CreateListingPage({
           </FormField>
 
           <FormField label={t.priceField}>
-            <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-[#16A34A] focus-within:bg-white">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={formValues.priceNegotiable}
+                  onChange={handlePriceNegotiableChange}
+                  className="h-4 w-4 rounded border-slate-300 text-[#16A34A] focus:ring-[#16A34A]"
+                />
+                <span>{t.priceNegotiable}</span>
+              </label>
+              <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-[#16A34A] focus-within:bg-white">
               <input
                 min="0"
                 step="1"
@@ -594,9 +646,11 @@ export default function CreateListingPage({
                 name="price"
                 value={formValues.price}
                 onChange={handleChange}
+                disabled={formValues.priceNegotiable}
                 className="w-full bg-transparent text-sm text-slate-900 outline-none"
               />
               <span className="text-sm font-bold text-[#16A34A]">₸</span>
+              </div>
             </div>
           </FormField>
 
@@ -613,15 +667,27 @@ export default function CreateListingPage({
           </FormField>
 
           <FormField label={t.whatsappField} error={errors.whatsapp} requiredMark={t.requiredMark}>
-            <input
-              name="whatsapp"
-              value={formValues.whatsapp}
-              onChange={handleChange}
-              placeholder={t.whatsappPlaceholder}
-              className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16A34A] focus:bg-white ${
-                errors.whatsapp ? 'border-rose-300' : 'border-slate-200'
-              }`}
-            />
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={formValues.whatsappSameAsPhone}
+                  onChange={handleWhatsappSameAsPhoneChange}
+                  className="h-4 w-4 rounded border-slate-300 text-[#16A34A] focus:ring-[#16A34A]"
+                />
+                <span>{t.whatsappSameAsPhone}</span>
+              </label>
+              <input
+                name="whatsapp"
+                value={formValues.whatsapp}
+                onChange={handleChange}
+                disabled={formValues.whatsappSameAsPhone}
+                placeholder={t.whatsappPlaceholder}
+                className={`w-full rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16A34A] focus:bg-white disabled:cursor-not-allowed disabled:bg-slate-100 ${
+                  errors.whatsapp ? 'border-rose-300' : 'border-slate-200'
+                }`}
+              />
+            </div>
           </FormField>
 
           <div className="rounded-[28px] bg-white p-5 shadow-soft">
