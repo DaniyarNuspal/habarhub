@@ -8,6 +8,9 @@ import { defaultLanguage, translations } from '../i18n/translations';
 import { supabase } from '../supabase';
 import { formatDate, formatPrice } from '../utils/format';
 
+const REPORT_COOLDOWN_KEY = 'habarhub:report-cooldowns';
+const REPORT_COOLDOWN_MS = 10 * 60 * 1000;
+
 function normalizePhoneForWhatsApp(value) {
   return value.replace(/[^\d]/g, '');
 }
@@ -92,6 +95,10 @@ export default function ListingDetailPage({
   const [selectedImage, setSelectedImage] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState('');
+  const [actionToast, setActionToast] = useState('');
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   useEffect(() => {
     document.title = 'HabarHub - 哈百通';
@@ -121,7 +128,7 @@ export default function ListingDetailPage({
         return;
       }
 
-      if (error || !data) {
+      if (error || !data || data.hidden) {
         if (error) {
           console.warn('Failed to fetch listing detail:', error);
         }
@@ -159,6 +166,18 @@ export default function ListingDetailPage({
     return () => window.clearTimeout(timer);
   }, [copyStatus]);
 
+  useEffect(() => {
+    if (!actionToast) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setActionToast('');
+    }, 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [actionToast]);
+
   if (isLoading) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-6">
@@ -194,6 +213,14 @@ export default function ListingDetailPage({
   const createdAt = item.createdAt || item.postedAt;
   const isFavorite = favorites.some((favoriteId) => String(favoriteId) === String(item.id));
   const hasRealImage = galleryImages.length > 0 || Boolean(item.image);
+  const reportReasons = [
+    t.reportReasonPorn,
+    t.reportReasonGambling,
+    t.reportReasonSpam,
+    t.reportReasonFake,
+    t.reportReasonIllegal,
+    t.reportReasonOther
+  ];
   const selectedImageIndex = Math.max(
     0,
     galleryImages.findIndex((image) => image === selectedImage)
@@ -289,8 +316,67 @@ export default function ListingDetailPage({
     setSelectedImage(galleryImages[nextIndex]);
   }
 
+  async function handleSubmitReport() {
+    if (!reportReason || isSubmittingReport) {
+      return;
+    }
+
+    try {
+      const rawCooldowns = window.localStorage.getItem(REPORT_COOLDOWN_KEY);
+      const cooldowns = rawCooldowns ? JSON.parse(rawCooldowns) : {};
+      const lastReportedAt = cooldowns[String(item.id)];
+
+      if (lastReportedAt && Date.now() - Number(lastReportedAt) < REPORT_COOLDOWN_MS) {
+        setActionToast(t.reportCooldown);
+        setIsReportOpen(false);
+        return;
+      }
+
+      setIsSubmittingReport(true);
+
+      const { error } = await supabase.from('reports').insert([
+        {
+          post_id: Number.isFinite(Number(item.id)) ? Number(item.id) : null,
+          post_title:
+            typeof item.title === 'string'
+              ? item.title
+              : item.title?.zh || item.title?.en || '',
+          post_phone: item.phone || '',
+          reason: reportReason
+        }
+      ]);
+
+      if (error) {
+        console.error('Report submission failed:', error);
+        setIsSubmittingReport(false);
+        return;
+      }
+
+      const nextCooldowns = {
+        ...(rawCooldowns ? JSON.parse(rawCooldowns) : {}),
+        [String(item.id)]: Date.now()
+      };
+      window.localStorage.setItem(REPORT_COOLDOWN_KEY, JSON.stringify(nextCooldowns));
+      setActionToast(t.reportSuccess);
+      setIsReportOpen(false);
+      setReportReason('');
+      setIsSubmittingReport(false);
+    } catch (error) {
+      console.error('Report submission failed:', error);
+      setIsSubmittingReport(false);
+    }
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-md bg-slate-100 pb-10">
+      {actionToast ? (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-40 mx-auto flex max-w-md justify-center px-4">
+          <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-soft">
+            {actionToast}
+          </div>
+        </div>
+      ) : null}
+
       <div className="relative">
         <div className="bg-slate-100 px-2 pt-2">
           {hasRealImage ? (
@@ -449,6 +535,17 @@ export default function ListingDetailPage({
             {t.whatsapp}
           </button>
         </div>
+
+        <div className="rounded-[24px] bg-white p-2 shadow-soft">
+          <button
+            type="button"
+            onClick={() => setIsReportOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-300 bg-white px-3 py-3 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+          >
+            <span aria-hidden="true">🚩</span>
+            {t.report}
+          </button>
+        </div>
       </main>
 
       {isPreviewOpen ? (
@@ -494,6 +591,58 @@ export default function ListingDetailPage({
                 alt={typeof item.title === 'string' ? item.title : item.title?.[language]}
                 className="max-h-[80vh] w-full object-contain"
               />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isReportOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/50 px-4 pb-4 pt-10"
+          onClick={() => setIsReportOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-[28px] bg-white p-5 shadow-soft"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-slate-900">{t.reportTitle}</h2>
+            <div className="mt-4 space-y-2">
+              {reportReasons.map((reason) => {
+                const active = reportReason === reason;
+
+                return (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setReportReason(reason)}
+                    className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
+                      active
+                        ? 'bg-rose-50 text-rose-600'
+                        : 'bg-slate-50 text-slate-700'
+                    }`}
+                  >
+                    <span>{reason}</span>
+                    {active ? <span className="text-rose-500">●</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsReportOpen(false)}
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={!reportReason || isSubmittingReport}
+                onClick={handleSubmitReport}
+                className="w-full rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white disabled:bg-rose-300"
+              >
+                {t.reportSubmit}
+              </button>
             </div>
           </div>
         </div>

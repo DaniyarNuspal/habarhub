@@ -4,7 +4,8 @@ export const categories = [
   { id: 'jobs', icon: '◫' },
   { id: 'services', icon: '✦' },
   { id: 'market', icon: '◇' },
-  { id: 'route-car', icon: '◌' }
+  { id: 'route-car', icon: '◌' },
+  { id: 'business', icon: '▣' }
 ];
 
 import { getUserId } from '../utils/user';
@@ -22,7 +23,9 @@ const categoryImages = {
   market:
     'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1200&q=80',
   'route-car':
-    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80'
+    'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80',
+  business:
+    'https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80'
 };
 
 const categoryTags = {
@@ -30,7 +33,8 @@ const categoryTags = {
   jobs: ['新发布', '招聘'],
   services: ['新发布', '服务'],
   market: ['新发布', '二手'],
-  'route-car': ['新发布', '线路车']
+  'route-car': ['新发布', '线路车'],
+  business: ['新发布', '商业']
 };
 
 export const seedListings = [

@@ -5,6 +5,7 @@ import CreateListingPage from './pages/CreateListingPage';
 import HomePage from './pages/HomePage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import MyListingsPage from './pages/MyListingsPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 import { defaultLanguage, languages } from './i18n/translations';
 import { saveStoredFavorites, toggleFavorite } from './utils/favorites';
 import { getUserId } from './utils/user';
@@ -82,6 +83,7 @@ export default function App() {
       whatsapp: item.whatsapp || '',
       currency: item.currency || '₸',
       userId: item.userId || item.user_id || currentUserId,
+      hidden: Boolean(item.hidden),
       isUserCreated: Boolean(item.isUserCreated || item.userId || item.user_id),
       featured: Boolean(item.featured)
     }),
@@ -92,6 +94,7 @@ export default function App() {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
+      .or('hidden.is.null,hidden.eq.false')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -312,6 +315,15 @@ export default function App() {
               onDeleteListing={handleDeleteListing}
               onLanguageChange={setLanguage}
               onToggleFavorite={handleToggleFavorite}
+            />
+          }
+        />
+        <Route
+          path="/super-admin"
+          element={
+            <SuperAdminPage
+              language={language}
+              onRefreshListings={refreshListings}
             />
           }
         />

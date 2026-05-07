@@ -5,6 +5,7 @@ import LogoMark from '../components/LogoMark';
 import { categories } from '../data/listings';
 import { translations } from '../i18n/translations';
 import { getUserId } from '../utils/user';
+import { checkBadWords } from '../utils/checkBadWords';
 import { supabase } from '../supabase';
 
 const initialForm = {
@@ -77,6 +78,18 @@ export default function CreateListingPage({
   useEffect(() => {
     document.title = 'HabarHub - 哈百通';
   }, []);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setToastMessage('');
+    }, 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
 
   useEffect(() => {
     if (id && !editingListing) {
@@ -360,6 +373,21 @@ export default function CreateListingPage({
   async function handleSubmit(event) {
     event.preventDefault();
     if (isSubmitting || !validateForm()) {
+      return;
+    }
+
+    const badWordsResult = checkBadWords({
+      title: formValues.title,
+      description: formValues.description,
+      tags: formValues.tags,
+      phone: formValues.phone,
+      whatsapp: formValues.whatsapp
+    });
+
+    if (!badWordsResult.ok) {
+      setToastMessage(
+        t.badWordsDetected.replace('{word}', badWordsResult.matchedWord)
+      );
       return;
     }
 

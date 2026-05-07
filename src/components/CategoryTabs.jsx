@@ -1,5 +1,6 @@
 import {
   HiOutlineBriefcase,
+  HiOutlineBuildingStorefront,
   HiOutlineHome,
   HiOutlineTruck,
   HiOutlineSquares2X2,
@@ -14,12 +15,14 @@ const categoryIcons = {
   jobs: HiOutlineBriefcase,
   services: HiOutlineWrenchScrewdriver,
   market: HiOutlineTag,
-  'route-car': HiOutlineTruck
+  'route-car': HiOutlineTruck,
+  business: HiOutlineBuildingStorefront
 };
 
 export default function CategoryTabs({ current, labels, onChange }) {
   return (
-    <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 sm:grid-cols-3">
+    <div className="-mx-4 overflow-x-auto px-4 pb-2">
+      <div className="flex min-w-max gap-3">
       {categories.map((category) => {
         const active = current === category.id;
         const Icon = categoryIcons[category.id] || HiOutlineSquares2X2;
@@ -29,20 +32,21 @@ export default function CategoryTabs({ current, labels, onChange }) {
             key={category.id}
             type="button"
             onClick={() => onChange(category.id)}
-            className={`flex min-w-0 items-center justify-center gap-[6px] rounded-2xl px-3.5 py-1.5 text-sm font-semibold transition ${
+            className={`flex w-[92px] shrink-0 flex-col items-center justify-center gap-2 rounded-[24px] px-3 py-4 text-center text-sm font-semibold transition ${
               active
                 ? 'bg-[#16A34A] text-white shadow-soft'
-                : 'bg-white text-slate-600 shadow-soft hover:bg-slate-50'
+                : 'bg-white text-slate-700 shadow-soft hover:bg-slate-50'
             }`}
           >
             <Icon
-              className={`shrink-0 text-[18px] ${active ? 'text-white' : 'text-slate-700'}`}
+              className={`shrink-0 text-[26px] ${active ? 'text-white' : 'text-[#16A34A]'}`}
               aria-hidden="true"
             />
-            <span className="truncate">{labels[category.id]}</span>
+            <span className="line-clamp-2 text-xs leading-4">{labels[category.id]}</span>
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

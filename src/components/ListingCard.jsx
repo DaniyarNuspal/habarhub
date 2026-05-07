@@ -14,17 +14,17 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
   const hasImage = Boolean(item.images?.[0] || item.image);
 
   return (
-    <article className="overflow-hidden rounded-[28px] bg-white shadow-soft">
+    <article className="overflow-hidden rounded-[30px] bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-0.5">
       {hasImage ? (
-        <div className="relative aspect-[4/3] overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
           <ListingImage
             src={item.images?.[0] || item.image}
             category={item.category}
             alt={title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-300"
           />
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[#16A34A] backdrop-blur">
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+            <span className="rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-[#16A34A] backdrop-blur">
               {labels[item.category]}
             </span>
             <div className="flex items-center gap-2">
@@ -36,7 +36,7 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
               <button
                 type="button"
                 onClick={() => onToggleFavorite(item.id)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-rose-500 backdrop-blur"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/92 text-rose-500 shadow-sm backdrop-blur"
                 aria-label={labels.favorite}
                 title={labels.favorite}
               >
@@ -51,7 +51,7 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
         </div>
       ) : null}
 
-      <div className={hasImage ? 'space-y-4 p-4' : 'space-y-3 p-4'}>
+      <div className={hasImage ? 'space-y-4 p-5' : 'space-y-3 p-5'}>
         {!hasImage ? (
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +67,7 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
             <button
               type="button"
               onClick={() => onToggleFavorite(item.id)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
               aria-label={labels.favorite}
               title={labels.favorite}
             >
@@ -80,17 +80,17 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <div className="space-y-2">
-            <h3 className={`${hasImage ? 'max-h-12' : 'max-h-14'} overflow-hidden text-base font-semibold leading-6 text-slate-900`}>
+        <div className="space-y-3">
+          <div className="space-y-3">
+            <h3 className={`${hasImage ? 'max-h-14' : 'max-h-16'} overflow-hidden text-lg font-bold leading-7 text-slate-900`}>
               {title}
             </h3>
-            <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900">
+            <div className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900 ring-1 ring-amber-100">
               {formatPrice(item.price, item.currency || 'KZT', language)}
             </div>
           </div>
 
-          <p className={`${hasImage ? 'max-h-12' : 'max-h-[72px]'} overflow-hidden text-sm leading-6 text-slate-500`}>
+          <p className={`${hasImage ? 'max-h-[72px]' : 'max-h-[88px]'} overflow-hidden text-sm leading-6 text-slate-500`}>
             {description}
           </p>
         </div>
@@ -108,26 +108,30 @@ export default function ListingCard({ item, language, labels, onShare, isFavorit
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-3 text-xs text-slate-400">
-          <span className="min-w-0 truncate">{location}</span>
-          <span className="shrink-0">{createdAt ? formatDate(createdAt, language) : ''}</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex min-w-0 max-w-[70%] truncate rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+            {location}
+          </span>
+          <span className="shrink-0 text-[11px] font-medium text-slate-400">
+            {createdAt ? formatDate(createdAt, language) : ''}
+          </span>
         </div>
 
         <div className="flex items-center gap-[10px]">
           <Link
             to={`/listing/${item.id}`}
-            className="flex h-12 basis-[70%] items-center justify-center rounded-2xl bg-[#16A34A] px-4 pr-5 text-center text-sm font-semibold text-white hover:bg-[#15803D]"
+            className="flex h-12 basis-[68%] items-center justify-center rounded-2xl bg-[#16A34A] px-4 pr-5 text-center text-sm font-semibold text-white shadow-[0_10px_24px_rgba(22,163,74,0.22)] hover:bg-[#15803D]"
           >
             {labels.details}
           </Link>
           <button
             type="button"
             onClick={() => onShare(item)}
-            className="flex h-12 shrink-0 items-center justify-center gap-[6px] rounded-xl border border-[#16A34A] bg-white px-3.5 text-sm font-semibold text-[#16A34A] transition-colors hover:bg-slate-50 active:bg-slate-100"
+            className="flex h-12 shrink-0 items-center justify-center gap-[6px] rounded-2xl bg-[#16A34A]/10 px-4 text-sm font-semibold text-[#16A34A] transition-colors hover:bg-[#16A34A]/15 active:bg-[#16A34A]/20"
             aria-label={labels.share}
             title={labels.share}
           >
-            <FaWhatsapp className="text-[17px] text-[#16A34A]" aria-hidden="true" />
+            <FaWhatsapp className="text-[18px] text-[#16A34A]" aria-hidden="true" />
             <span>{labels.share}</span>
           </button>
         </div>

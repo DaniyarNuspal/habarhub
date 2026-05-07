@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { HiOutlineChevronDown, HiOutlineMapPin } from 'react-icons/hi2';
 import BottomNav from '../components/BottomNav';
 import CategoryTabs from '../components/CategoryTabs';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -12,6 +13,7 @@ import { formatPrice } from '../utils/format';
 export default function HomePage({ favorites, language, listings, onLanguageChange, onToggleFavorite }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [city, setCity] = useState('all');
   const [toastMessage, setToastMessage] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,9 +40,24 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
   }, [location.pathname, location.state, navigate]);
 
   const normalizedQuery = query.trim().toLowerCase();
+  const cityOptions = [
+    { label: t.allCities, value: 'all' },
+    ...Array.from(
+      new Set(
+        listings
+          .map((item) => item.location?.split('·')[0]?.trim())
+          .filter(Boolean)
+      )
+    ).map((value) => ({
+      label: value,
+      value
+    }))
+  ];
 
   const filteredListings = listings.filter((item) => {
     const matchesCategory = category === 'all' || item.category === category;
+    const cityLabel = item.location?.split('·')[0]?.trim() || '';
+    const matchesCity = city === 'all' || cityLabel === city;
     const categoryTerms = [
       item.category,
       translations.zh[item.category],
@@ -62,7 +79,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
       .toLowerCase();
 
     const matchesQuery = !normalizedQuery || content.includes(normalizedQuery);
-    return matchesCategory && matchesQuery;
+    return matchesCategory && matchesCity && matchesQuery;
   });
 
   const featuredListings = filteredListings.filter((item) => item.featured);
@@ -76,7 +93,8 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
     jobs: t.jobs,
     services: t.services,
     market: t.market,
-    'route-car': t['route-car'],
+    'route-car': language === 'zh' ? '拼车' : t['route-car'],
+    business: t.business,
     share: t.share,
     favorite: t.favorite,
     details: t.details,
@@ -106,32 +124,59 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
       ) : null}
 
       <main className="flex-1 px-4 pb-8">
-        <section className="relative overflow-hidden rounded-b-[32px] bg-hero px-5 pb-3 pt-5">
-          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/70 to-transparent" />
+        <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-5 pt-5 shadow-soft">
+          <div className="absolute -right-16 -top-10 h-44 w-44 rounded-full bg-[#16A34A]/10 blur-3xl" />
+          <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-amber-200/25 blur-2xl" />
 
-          <div className="relative space-y-3">
+          <div className="relative space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <LogoMark />
-                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
+                  {t.slogan}
+                </p>
+                <h1 className="mt-3 text-[30px] font-black leading-[1.05] tracking-tight text-slate-900">
                   {t.greeting}
                 </h1>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-slate-600">{t.subtitle}</p>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">
+                  {t.heroSlogan}
+                </p>
               </div>
               <LanguageSwitcher current={language} onChange={onLanguageChange} />
             </div>
 
-            <SearchBar
-              value={query}
-              onChange={setQuery}
-              placeholder={t.searchPlaceholder}
-            />
+            <div className="space-y-3">
+              <SearchBar
+                value={query}
+                onChange={setQuery}
+                placeholder={t.searchPlaceholder}
+              />
+
+              <label className="flex items-center gap-3 rounded-[22px] border border-slate-200/80 bg-white/95 px-4 py-3.5 shadow-soft backdrop-blur">
+                <HiOutlineMapPin className="text-[18px] text-[#16A34A]" aria-hidden="true" />
+                <select
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  className="w-full appearance-none bg-transparent text-sm font-medium text-slate-900 outline-none"
+                >
+                  {cityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <HiOutlineChevronDown className="text-[16px] text-slate-400" aria-hidden="true" />
+              </label>
+            </div>
           </div>
         </section>
 
-        <section className="mt-1 space-y-2">
+        <section className="mt-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">{t.filtersTitle}</h2>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{t.filtersTitle}</h2>
+              <p className="mt-1 text-xs font-medium text-slate-400">{t.subtitle}</p>
+            </div>
           </div>
           <CategoryTabs current={category} labels={labels} onChange={setCategory} />
         </section>
@@ -157,10 +202,15 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
           </section>
         ) : null}
 
-        <section className="mt-8 space-y-4">
+        <section className="mt-9 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">{t.feedTitle}</h2>
-            <span className="text-sm font-medium text-slate-400">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{t.feedTitle}</h2>
+              <p className="mt-1 text-xs font-medium text-slate-400">
+                {city === 'all' ? t.allCities : city}
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-soft">
               {filteredListings.length} {t.resultCount}
             </span>
           </div>
