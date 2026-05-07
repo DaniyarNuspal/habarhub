@@ -97,7 +97,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-100">
+    <div className="mx-auto flex min-h-screen max-w-7xl flex-col bg-slate-100">
       {toastMessage ? (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-30 mx-auto flex max-w-md justify-center px-4">
           <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-soft">
@@ -106,7 +106,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
         </div>
       ) : null}
 
-      <main className="flex-1 px-4 pb-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-8">
         <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-5 pt-5 shadow-soft">
           <div className="absolute -right-16 -top-10 h-44 w-44 rounded-full bg-[#16A34A]/10 blur-3xl" />
           <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-amber-200/25 blur-2xl" />
@@ -163,7 +163,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">{t.featured}</h2>
             </div>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
               {featuredListings.map((item) => (
                 <ListingCard
                   key={item.id}
@@ -173,6 +173,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                   labels={labels}
                   onShare={handleShare}
                   onToggleFavorite={onToggleFavorite}
+                  variant="compact"
                 />
               ))}
             </div>
@@ -190,7 +191,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
             {filteredListings.length > 0 ? (
               filteredListings.map((item) => (
                 <ListingCard
@@ -201,10 +202,11 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                   labels={labels}
                   onShare={handleShare}
                   onToggleFavorite={onToggleFavorite}
+                  variant="compact"
                 />
               ))
             ) : (
-              <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
+              <div className="col-span-full rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">
                   {normalizedQuery ? t.noSearchResults : t.notFound}
                 </p>
