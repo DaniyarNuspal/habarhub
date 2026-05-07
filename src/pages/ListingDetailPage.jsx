@@ -4,6 +4,7 @@ import { HiHeart, HiOutlineHeart, HiOutlinePhone, HiOutlineShare } from 'react-i
 import { Link, useParams } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ListingImage from '../components/ListingImage';
+import ListingCard from '../components/ListingCard';
 import { defaultLanguage, translations } from '../i18n/translations';
 import { supabase } from '../supabase';
 import { formatDate, formatPrice } from '../utils/format';
@@ -226,6 +227,35 @@ export default function ListingDetailPage({
     0,
     galleryImages.findIndex((image) => image === selectedImage)
   );
+  const relatedListings = listings
+    .filter(
+      (entry) =>
+        String(entry.id) !== String(item.id) &&
+        entry.category === item.category &&
+        !entry.hidden
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || b.postedAt || 0).getTime() -
+        new Date(a.createdAt || a.postedAt || 0).getTime()
+    )
+    .slice(0, 6);
+  const relatedLabels = {
+    home: t.home,
+    my: t.my,
+    publish: t.publish,
+    all: t.all,
+    housing: t.housing,
+    jobs: t.jobs,
+    services: t.services,
+    market: t.market,
+    'route-car': language === 'zh' ? '拼车' : t['route-car'],
+    business: t.business,
+    share: t.share,
+    favorite: t.favorite,
+    details: t.details,
+    priceLabel: t.priceLabel
+  };
 
   async function shareListing() {
     const url = window.location.href;
@@ -368,7 +398,7 @@ export default function ListingDetailPage({
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-slate-100 pb-10">
+    <div className="mx-auto min-h-screen max-w-md bg-slate-100 pb-16">
       {actionToast ? (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-40 mx-auto flex max-w-md justify-center px-4">
           <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-soft">
@@ -445,7 +475,7 @@ export default function ListingDetailPage({
         </div>
       </div>
 
-      <main className="space-y-4 px-4 pt-5">
+      <main className="space-y-4 px-4 pb-28 pt-5">
         <div className="rounded-[28px] bg-white p-5 shadow-soft">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -546,6 +576,32 @@ export default function ListingDetailPage({
             {t.report}
           </button>
         </div>
+
+        {relatedListings.length > 0 ? (
+          <section className="space-y-4">
+            <div className="rounded-[28px] bg-white p-5 shadow-soft">
+              <h2 className="text-lg font-bold text-slate-900">{t.relatedTitle}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t.relatedSubtitle}</p>
+            </div>
+
+            <div className="columns-2 gap-3 lg:columns-3 xl:columns-4">
+              {relatedListings.map((entry) => (
+                <ListingCard
+                  key={entry.id}
+                  item={entry}
+                  language={language}
+                  labels={relatedLabels}
+                  onShare={() => {}}
+                  isFavorite={favorites.some(
+                    (favoriteId) => String(favoriteId) === String(entry.id)
+                  )}
+                  onToggleFavorite={onToggleFavorite}
+                  variant="compact"
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
 
       {isPreviewOpen ? (
