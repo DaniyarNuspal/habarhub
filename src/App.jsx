@@ -94,7 +94,6 @@ export default function App() {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .or('hidden.is.null,hidden.eq.false')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -103,7 +102,9 @@ export default function App() {
     }
 
     setListings(
-      data.map((item) => mapPostToListing(item))
+      (data || [])
+        .filter((item) => !item?.hidden)
+        .map((item) => mapPostToListing(item))
     );
 
     return true;
