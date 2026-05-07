@@ -160,7 +160,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">{t.featured}</h2>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
               {featuredListings.map((item) => (
                 <ListingCard
                   key={item.id}
@@ -188,7 +188,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
             {filteredListings.length > 0 ? (
               filteredListings.map((item) => (
                 <ListingCard
@@ -203,7 +203,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                 />
               ))
             ) : (
-              <div className="col-span-full rounded-[28px] bg-white p-8 text-center shadow-soft">
+              <div className="mb-3 break-inside-avoid rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">
                   {normalizedQuery ? t.noSearchResults : t.notFound}
                 </p>

@@ -24,14 +24,19 @@ export default function ListingCard({
 
   if (isCompact) {
     return (
-      <article className="overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5">
+      <article className="group relative mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5">
+        <Link
+          to={`/listing/${item.id}`}
+          aria-label={title}
+          className="absolute inset-0 z-0"
+        />
         {hasImage ? (
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             <ListingImage
               src={item.images?.[0] || item.image}
               category={item.category}
               alt={title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
             <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
               <span className="max-w-[72%] truncate rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#16A34A] backdrop-blur">
@@ -40,7 +45,7 @@ export default function ListingCard({
               <button
                 type="button"
                 onClick={() => onToggleFavorite(item.id)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/92 text-rose-500 shadow-sm backdrop-blur"
+                className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/92 text-rose-500 shadow-sm backdrop-blur"
                 aria-label={labels.favorite}
                 title={labels.favorite}
               >
@@ -60,7 +65,7 @@ export default function ListingCard({
             <button
               type="button"
               onClick={() => onToggleFavorite(item.id)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
+              className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
               aria-label={labels.favorite}
               title={labels.favorite}
             >
@@ -73,7 +78,7 @@ export default function ListingCard({
           </div>
         )}
 
-        <div className={`space-y-3 px-3 pb-3 ${hasImage ? 'pt-3' : 'pt-2'}`}>
+        <div className={`relative z-10 space-y-3 px-3 pb-3 ${hasImage ? 'pt-3' : 'pt-2'}`}>
           <div className="space-y-2">
             <h3 className="max-h-11 overflow-hidden text-sm font-bold leading-[1.35] text-slate-900">
               {title}
@@ -83,7 +88,7 @@ export default function ListingCard({
             </div>
           </div>
 
-          <p className="max-h-10 overflow-hidden text-xs leading-5 text-slate-500">
+          <p className={`${hasImage ? 'max-h-10' : 'max-h-[72px]'} overflow-hidden text-xs leading-5 text-slate-500`}>
             {description}
           </p>
 
@@ -96,25 +101,6 @@ export default function ListingCard({
               <span />
             )}
             <span className="shrink-0">{createdAt ? formatDate(createdAt, language) : ''}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/listing/${item.id}`}
-              className="flex h-10 min-w-0 flex-1 items-center justify-center rounded-2xl bg-[#16A34A] px-3 text-center text-xs font-semibold text-white shadow-[0_8px_20px_rgba(22,163,74,0.18)] hover:bg-[#15803D]"
-            >
-              {labels.details}
-            </Link>
-            <button
-              type="button"
-              onClick={() => onShare(item)}
-              className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-[#16A34A]/10 px-3 text-xs font-semibold text-[#16A34A] transition-colors hover:bg-[#16A34A]/15 active:bg-[#16A34A]/20"
-              aria-label={labels.share}
-              title={labels.share}
-            >
-              <FaWhatsapp className="text-[15px] text-[#16A34A]" aria-hidden="true" />
-              <span>WhatsApp</span>
-            </button>
           </div>
         </div>
       </article>
