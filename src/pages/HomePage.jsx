@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { HiOutlineChevronDown, HiOutlineMapPin } from 'react-icons/hi2';
 import BottomNav from '../components/BottomNav';
 import CategoryTabs from '../components/CategoryTabs';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -13,7 +12,6 @@ import { formatPrice } from '../utils/format';
 export default function HomePage({ favorites, language, listings, onLanguageChange, onToggleFavorite }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
-  const [city, setCity] = useState('all');
   const [toastMessage, setToastMessage] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
@@ -40,24 +38,9 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
   }, [location.pathname, location.state, navigate]);
 
   const normalizedQuery = query.trim().toLowerCase();
-  const cityOptions = [
-    { label: t.allCities, value: 'all' },
-    ...Array.from(
-      new Set(
-        listings
-          .map((item) => item.location?.split('·')[0]?.trim())
-          .filter(Boolean)
-      )
-    ).map((value) => ({
-      label: value,
-      value
-    }))
-  ];
 
   const filteredListings = listings.filter((item) => {
     const matchesCategory = category === 'all' || item.category === category;
-    const cityLabel = item.location?.split('·')[0]?.trim() || '';
-    const matchesCity = city === 'all' || cityLabel === city;
     const categoryTerms = [
       item.category,
       translations.zh[item.category],
@@ -79,7 +62,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
       .toLowerCase();
 
     const matchesQuery = !normalizedQuery || content.includes(normalizedQuery);
-    return matchesCategory && matchesCity && matchesQuery;
+    return matchesCategory && matchesQuery;
   });
 
   const featuredListings = filteredListings.filter((item) => item.featured);
@@ -141,32 +124,26 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                 <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">
                   {t.heroSlogan}
                 </p>
+                <div className="mt-4 space-y-2">
+                  <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-soft ring-1 ring-slate-100">
+                    <span className="mr-1.5 text-[#16A34A]">{t.heroPointFreeAccent}</span>
+                    <span>{t.heroPointFreeText}</span>
+                  </div>
+                  <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-soft ring-1 ring-slate-100">
+                    <span className="mr-1.5 text-[#16A34A]">{t.heroPointFastAccent}</span>
+                    <span>{t.heroPointFastText}</span>
+                  </div>
+                </div>
               </div>
               <LanguageSwitcher current={language} onChange={onLanguageChange} />
             </div>
 
-            <div className="space-y-3">
+            <div>
               <SearchBar
                 value={query}
                 onChange={setQuery}
                 placeholder={t.searchPlaceholder}
               />
-
-              <label className="flex items-center gap-3 rounded-[22px] border border-slate-200/80 bg-white/95 px-4 py-3.5 shadow-soft backdrop-blur">
-                <HiOutlineMapPin className="text-[18px] text-[#16A34A]" aria-hidden="true" />
-                <select
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  className="w-full appearance-none bg-transparent text-sm font-medium text-slate-900 outline-none"
-                >
-                  {cityOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <HiOutlineChevronDown className="text-[16px] text-slate-400" aria-hidden="true" />
-              </label>
             </div>
           </div>
         </section>
@@ -206,9 +183,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">{t.feedTitle}</h2>
-              <p className="mt-1 text-xs font-medium text-slate-400">
-                {city === 'all' ? t.allCities : city}
-              </p>
+              <p className="mt-1 text-xs font-medium text-slate-400">{t.feedSubtitle}</p>
             </div>
             <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-soft">
               {filteredListings.length} {t.resultCount}
