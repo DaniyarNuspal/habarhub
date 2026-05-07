@@ -338,20 +338,14 @@ export default function ListingDetailPage({
       const { error } = await supabase.from('reports').insert([
         {
           post_id: Number.isFinite(Number(item.id)) ? Number(item.id) : null,
-          post_title:
-            typeof item.title === 'string'
-              ? item.title
-              : item.title?.zh || item.title?.en || '',
-          post_phone: item.phone || '',
           reason: reportReason,
-          detail: reportDetail.trim(),
-          status: 'pending'
+          detail: reportDetail.trim() || null
         }
       ]);
 
       if (error) {
         console.error('Report submission failed:', error);
-        setActionToast(t.reportFailed);
+        setActionToast(error.message || t.reportFailed);
         setIsSubmittingReport(false);
         return;
       }
@@ -368,7 +362,7 @@ export default function ListingDetailPage({
       setIsSubmittingReport(false);
     } catch (error) {
       console.error('Report submission failed:', error);
-      setActionToast(t.reportFailed);
+      setActionToast(error?.message || t.reportFailed);
       setIsSubmittingReport(false);
     }
   }
