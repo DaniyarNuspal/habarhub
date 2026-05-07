@@ -107,24 +107,21 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
       ) : null}
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-8">
-        <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-5 pt-5 shadow-soft">
+        <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-4 pt-4 shadow-soft">
           <div className="absolute -right-16 -top-10 h-44 w-44 rounded-full bg-[#16A34A]/10 blur-3xl" />
           <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-amber-200/25 blur-2xl" />
 
-          <div className="relative space-y-4">
+          <div className="relative space-y-3">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <LogoMark />
-                <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
+                <p className="mt-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
                   {t.slogan}
                 </p>
-                <h1 className="mt-3 text-[30px] font-black leading-[1.05] tracking-tight text-slate-900">
+                <h1 className="mt-2.5 text-[28px] font-black leading-[1.05] tracking-tight text-slate-900">
                   {t.greeting}
                 </h1>
-                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">
-                  {t.heroSlogan}
-                </p>
-                <div className="mt-4 space-y-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <div className="inline-flex items-center rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-soft ring-1 ring-slate-100">
                     <span className="mr-1.5 text-[#16A34A]">{t.heroPointFreeAccent}</span>
                     <span>{t.heroPointFreeText}</span>
@@ -138,7 +135,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
               <LanguageSwitcher current={language} onChange={onLanguageChange} />
             </div>
 
-            <div>
+            <div className="pt-0.5">
               <SearchBar
                 value={query}
                 onChange={setQuery}
