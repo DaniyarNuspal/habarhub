@@ -3,18 +3,29 @@ import { supabase } from '../supabase';
 import { translations } from '../i18n/translations';
 import { formatDate } from '../utils/format';
 
-const ADMIN_PASSWORD = 'oralman2026';
+const ADMIN_PASSWORD = 'HabarHub_9527_Admin';
 const ADMIN_SESSION_KEY = 'habarhub:super-admin-auth';
+
+function toDisplayTitle(value) {
+  if (value && typeof value === 'object') {
+    return value.zh || value.en || value.ru || value.kk || '';
+  }
+
+  return value || '';
+}
 
 export default function SuperAdminPage({ language, onRefreshListings }) {
   const t = translations[language];
   const [password, setPassword] = useState('');
-  const [isAuthed, setIsAuthed] = useState(() => window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true');
+  const [isAuthed, setIsAuthed] = useState(
+    () => window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true'
+  );
   const [activeTab, setActiveTab] = useState('posts');
   const [query, setQuery] = useState('');
   const [posts, setPosts] = useState([]);
   const [reports, setReports] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastTone, setToastTone] = useState('success');
   const [isLoading, setIsLoading] = useState(false);
 
   const tabs = useMemo(
@@ -35,7 +46,7 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     return posts.filter((post) => {
       const categoryLabel = translations[language][post.category] || post.category || '';
       const content = [
-        post.title,
+        toDisplayTitle(post.title),
         post.phone,
         post.location,
         post.category,
@@ -60,7 +71,7 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
     const timer = window.setTimeout(() => {
       setToastMessage('');
-    }, 2200);
+    }, 2600);
 
     return () => window.clearTimeout(timer);
   }, [toastMessage]);
@@ -85,12 +96,16 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
       if (postsError) {
         console.error('Failed to load admin posts:', postsError);
+        setToastTone('error');
+        setToastMessage(t.adminActionError);
       } else {
         setPosts(postsData || []);
       }
 
       if (reportsError) {
         console.error('Failed to load reports:', reportsError);
+        setToastTone('error');
+        setToastMessage(t.adminReportsLoadError);
       } else {
         setReports(reportsData || []);
       }
@@ -99,13 +114,18 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     }
 
     loadAdminData();
-  }, [isAuthed]);
+  }, [isAuthed, t.adminActionError, t.adminReportsLoadError]);
+
+  function showToast(message, tone = 'success') {
+    setToastTone(tone);
+    setToastMessage(message);
+  }
 
   function handleLogin(event) {
     event.preventDefault();
 
     if (password !== ADMIN_PASSWORD) {
-      setToastMessage(t.adminWrongPassword);
+      showToast(t.adminWrongPassword, 'error');
       return;
     }
 
@@ -115,27 +135,30 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
   }
 
   async function handleDeletePost(id) {
+    if (!window.confirm(t.deleteConfirm)) {
+      return;
+    }
+
     const { error } = await supabase.from('posts').delete().eq('id', id);
 
     if (error) {
       console.error('Admin delete failed:', error);
+      showToast(t.adminActionError, 'error');
       return;
     }
 
     setPosts((current) => current.filter((item) => String(item.id) !== String(id)));
     setReports((current) => current.filter((item) => String(item.post_id) !== String(id)));
-    setToastMessage(t.adminActionSuccessDelete);
+    showToast(t.adminActionSuccessDelete);
     await onRefreshListings?.();
   }
 
   async function handleHidePost(id) {
-    const { error } = await supabase
-      .from('posts')
-      .update({ hidden: true })
-      .eq('id', id);
+    const { error } = await supabase.from('posts').update({ hidden: true }).eq('id', id);
 
     if (error) {
       console.error('Admin hide failed:', error);
+      showToast(t.adminActionError, 'error');
       return;
     }
 
@@ -144,18 +167,16 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
         String(item.id) === String(id) ? { ...item, hidden: true } : item
       )
     );
-    setToastMessage(t.adminActionSuccessHide);
+    showToast(t.adminActionSuccessHide);
     await onRefreshListings?.();
   }
 
   async function handleRestorePost(id) {
-    const { error } = await supabase
-      .from('posts')
-      .update({ hidden: false })
-      .eq('id', id);
+    const { error } = await supabase.from('posts').update({ hidden: false }).eq('id', id);
 
     if (error) {
       console.error('Admin restore failed:', error);
+      showToast(t.adminActionError, 'error');
       return;
     }
 
@@ -164,8 +185,28 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
         String(item.id) === String(id) ? { ...item, hidden: false } : item
       )
     );
-    setToastMessage(t.adminActionSuccessRestore);
+    showToast(t.adminActionSuccessRestore);
     await onRefreshListings?.();
+  }
+
+  async function handleResolveReport(id) {
+    const { error } = await supabase
+      .from('reports')
+      .update({ status: 'processed' })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Resolve report failed:', error);
+      showToast(t.adminActionError, 'error');
+      return;
+    }
+
+    setReports((current) =>
+      current.map((item) =>
+        String(item.id) === String(id) ? { ...item, status: 'processed' } : item
+      )
+    );
+    showToast(t.adminActionSuccessProcess);
   }
 
   async function handleIgnoreReport(id) {
@@ -173,37 +214,51 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
     if (error) {
       console.error('Ignore report failed:', error);
+      showToast(t.adminActionError, 'error');
       return;
     }
 
     setReports((current) => current.filter((item) => String(item.id) !== String(id)));
-    setToastMessage(t.adminActionSuccessIgnore);
+    showToast(t.adminActionSuccessIgnore);
   }
 
   if (!isAuthed) {
     return (
-      <div className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100">
+      <div className="min-h-screen bg-slate-100 px-4 py-10 text-slate-900">
         {toastMessage ? (
           <div className="mx-auto mb-4 flex max-w-md justify-center">
-            <div className="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white">
+            <div
+              className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-soft ${
+                toastTone === 'error' ? 'bg-rose-500' : 'bg-[#16A34A]'
+              }`}
+            >
               {toastMessage}
             </div>
           </div>
         ) : null}
 
-        <div className="mx-auto max-w-md rounded-[28px] border border-slate-800 bg-slate-900 p-6 shadow-soft">
-          <h1 className="text-2xl font-black text-white">{t.adminTitle}</h1>
-          <form className="mt-5 space-y-4" onSubmit={handleLogin}>
+        <div className="mx-auto max-w-md rounded-[30px] bg-white p-6 shadow-soft">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
+            HabarHub Admin
+          </p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+            {t.adminTitle}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            {t.adminLoginHint}
+          </p>
+
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder={t.adminPassword}
-              className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-[#16A34A]"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16A34A]"
             />
             <button
               type="submit"
-              className="w-full rounded-2xl bg-[#16A34A] px-4 py-3 text-sm font-semibold text-white"
+              className="w-full rounded-2xl bg-[#16A34A] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15803D]"
             >
               {t.adminEnter}
             </button>
@@ -214,36 +269,54 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
+    <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900">
       {toastMessage ? (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-40 mx-auto flex max-w-md justify-center px-4">
-          <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-900 shadow-soft">
+          <div
+            className={`rounded-full px-4 py-2 text-sm font-semibold text-white shadow-soft ${
+              toastTone === 'error' ? 'bg-rose-500' : 'bg-[#16A34A]'
+            }`}
+          >
             {toastMessage}
           </div>
         </div>
       ) : null}
 
-      <div className="mx-auto max-w-md space-y-4">
-        <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-5">
-          <h1 className="text-2xl font-black text-white">{t.adminTitle}</h1>
-          <div className="mt-4 grid grid-cols-2 gap-2 rounded-[22px] bg-slate-950 p-2">
-            {tabs.map((tab) => {
-              const active = tab.id === activeTab;
+      <div className="mx-auto w-full max-w-[1320px] space-y-4">
+        <section className="rounded-[30px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 p-5 shadow-soft">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
+                HabarHub Admin
+              </p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+                {t.adminTitle}
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                {t.adminPanelHint}
+              </p>
+            </div>
 
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                    active ? 'bg-[#16A34A] text-white' : 'text-slate-400'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-2 gap-2 rounded-[22px] bg-white p-2 shadow-soft">
+              {tabs.map((tab) => {
+                const active = tab.id === activeTab;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                      active ? 'bg-[#16A34A] text-white' : 'text-slate-500'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           {activeTab === 'posts' ? (
             <div className="mt-4">
               <input
@@ -251,67 +324,71 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={t.adminSearchPlaceholder}
-                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-[#16A34A]"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#16A34A]"
               />
             </div>
           ) : null}
-        </div>
+        </section>
 
         {isLoading ? (
-          <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400">
+          <div className="rounded-[28px] bg-white p-6 text-center text-sm text-slate-500 shadow-soft">
             Loading...
           </div>
         ) : null}
 
         {!isLoading && activeTab === 'posts' ? (
           filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
-              <article
-                key={post.id}
-                className="rounded-[28px] border border-slate-800 bg-slate-900 p-4 shadow-soft"
-              >
-                <div className="space-y-2">
-                  <p className="text-sm font-bold text-white">{post.title}</p>
-                  <p className="text-xs text-slate-400">
-                    {t.posted}: {formatDate(post.created_at, language)}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminPostPhone}: {post.phone || '-'}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminPostCategory}: {translations[language][post.category] || post.category}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminPostCity}: {post.location || '-'}
-                  </p>
-                  {post.hidden ? (
-                    <span className="inline-flex rounded-full bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-300">
-                      {t.adminHidden}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePost(post.id)}
-                    className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white"
-                  >
-                    {t.adminDeletePost}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      post.hidden ? handleRestorePost(post.id) : handleHidePost(post.id)
-                    }
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-200"
-                  >
-                    {post.hidden ? t.adminRestorePost : t.adminHidePost}
-                  </button>
-                </div>
-              </article>
-            ))
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredPosts.map((post) => (
+                <article key={post.id} className="rounded-[28px] bg-white p-5 shadow-soft">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="text-base font-bold leading-6 text-slate-900">
+                        {toDisplayTitle(post.title) || '-'}
+                      </h2>
+                      {post.hidden ? (
+                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                          {t.adminHidden}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      {t.posted}: {formatDate(post.created_at, language)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {t.adminPostPhone}: {post.phone || '-'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {t.adminPostCategory}: {translations[language][post.category] || post.category || '-'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {t.adminPostCity}: {post.location || '-'}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePost(post.id)}
+                      className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white"
+                    >
+                      {t.adminDeletePost}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        post.hidden ? handleRestorePost(post.id) : handleHidePost(post.id)
+                      }
+                      className="rounded-2xl border border-[#16A34A]/20 bg-[#16A34A]/5 px-4 py-3 text-sm font-semibold text-[#16A34A]"
+                    >
+                      {post.hidden ? t.adminRestorePost : t.adminHidePost}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : (
-            <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400">
+            <div className="rounded-[28px] bg-white p-6 text-center text-sm text-slate-500 shadow-soft">
               {query.trim() ? t.notFound : t.adminNoPosts}
             </div>
           )
@@ -319,43 +396,81 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
         {!isLoading && activeTab === 'reports' ? (
           reports.length > 0 ? (
-            reports.map((report) => (
-              <article
-                key={report.id}
-                className="rounded-[28px] border border-slate-800 bg-slate-900 p-4 shadow-soft"
-              >
-                <div className="space-y-2">
-                  <p className="text-sm font-bold text-white">{report.post_title || '-'}</p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminReportReason}: {report.reason}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminReportTime}: {formatDate(report.created_at, language)}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {t.adminPostPhone}: {report.post_phone || '-'}
-                  </p>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePost(report.post_id)}
-                    className="rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white"
-                  >
-                    {t.adminDeletePost}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleIgnoreReport(report.id)}
-                    className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-200"
-                  >
-                    {t.adminIgnoreReport}
-                  </button>
-                </div>
-              </article>
-            ))
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {reports.map((report) => {
+                const processed = report.status === 'processed';
+
+                return (
+                  <article key={report.id} className="rounded-[28px] bg-white p-5 shadow-soft">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <h2 className="text-base font-bold leading-6 text-slate-900">
+                          {report.post_title || '-'}
+                        </h2>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                            processed
+                              ? 'bg-slate-100 text-slate-500'
+                              : 'bg-amber-50 text-amber-700'
+                          }`}
+                        >
+                          {processed ? t.adminProcessed : t.adminPending}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        {t.adminReportTime}: {formatDate(report.created_at, language)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {t.adminReportReason}: {report.reason || '-'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {t.adminReportStatus}: {processed ? t.adminProcessed : t.adminPending}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {t.adminPostPhone}: {report.post_phone || '-'}
+                      </p>
+                      <div className="rounded-2xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+                        <span className="font-semibold text-slate-700">{t.adminReportDetail}: </span>
+                        {report.detail?.trim() || t.adminNoDetail}
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleHidePost(report.post_id)}
+                        className="rounded-2xl border border-[#16A34A]/20 bg-[#16A34A]/5 px-4 py-3 text-sm font-semibold text-[#16A34A]"
+                      >
+                        {t.adminHidePost}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePost(report.post_id)}
+                        className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white"
+                      >
+                        {t.adminDeletePost}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleResolveReport(report.id)}
+                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                      >
+                        {t.adminProcessReport}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleIgnoreReport(report.id)}
+                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500"
+                      >
+                        {t.adminIgnoreReport}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           ) : (
-            <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400">
+            <div className="rounded-[28px] bg-white p-6 text-center text-sm text-slate-500 shadow-soft">
               {t.adminNoReports}
             </div>
           )

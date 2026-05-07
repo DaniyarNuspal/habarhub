@@ -98,6 +98,7 @@ export default function ListingDetailPage({
   const [actionToast, setActionToast] = useState('');
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [reportDetail, setReportDetail] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   useEffect(() => {
@@ -342,12 +343,15 @@ export default function ListingDetailPage({
               ? item.title
               : item.title?.zh || item.title?.en || '',
           post_phone: item.phone || '',
-          reason: reportReason
+          reason: reportReason,
+          detail: reportDetail.trim(),
+          status: 'pending'
         }
       ]);
 
       if (error) {
         console.error('Report submission failed:', error);
+        setActionToast(t.reportFailed);
         setIsSubmittingReport(false);
         return;
       }
@@ -360,9 +364,11 @@ export default function ListingDetailPage({
       setActionToast(t.reportSuccess);
       setIsReportOpen(false);
       setReportReason('');
+      setReportDetail('');
       setIsSubmittingReport(false);
     } catch (error) {
       console.error('Report submission failed:', error);
+      setActionToast(t.reportFailed);
       setIsSubmittingReport(false);
     }
   }
@@ -627,10 +633,25 @@ export default function ListingDetailPage({
                 );
               })}
             </div>
+            <div className="mt-3">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {t.reportDetailLabel}
+              </label>
+              <textarea
+                value={reportDetail}
+                onChange={(event) => setReportDetail(event.target.value)}
+                rows={3}
+                placeholder={t.reportDetailPlaceholder}
+                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-[#16A34A]"
+              />
+            </div>
             <div className="mt-4 flex gap-3">
               <button
                 type="button"
-                onClick={() => setIsReportOpen(false)}
+                onClick={() => {
+                  setIsReportOpen(false);
+                  setReportDetail('');
+                }}
                 className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
               >
                 {t.cancel}
