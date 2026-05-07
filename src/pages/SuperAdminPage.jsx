@@ -11,6 +11,7 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
   const [password, setPassword] = useState('');
   const [isAuthed, setIsAuthed] = useState(() => window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true');
   const [activeTab, setActiveTab] = useState('posts');
+  const [query, setQuery] = useState('');
   const [posts, setPosts] = useState([]);
   const [reports, setReports] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
@@ -23,6 +24,30 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     ],
     [t.adminPostsTab, t.adminReportsTab]
   );
+
+  const filteredPosts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return posts;
+    }
+
+    return posts.filter((post) => {
+      const categoryLabel = translations[language][post.category] || post.category || '';
+      const content = [
+        post.title,
+        post.phone,
+        post.location,
+        post.category,
+        categoryLabel
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return content.includes(normalizedQuery);
+    });
+  }, [language, posts, query]);
 
   useEffect(() => {
     document.title = 'HabarHub - Super Admin';
@@ -123,6 +148,26 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     await onRefreshListings?.();
   }
 
+  async function handleRestorePost(id) {
+    const { error } = await supabase
+      .from('posts')
+      .update({ hidden: false })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Admin restore failed:', error);
+      return;
+    }
+
+    setPosts((current) =>
+      current.map((item) =>
+        String(item.id) === String(id) ? { ...item, hidden: false } : item
+      )
+    );
+    setToastMessage(t.adminActionSuccessRestore);
+    await onRefreshListings?.();
+  }
+
   async function handleIgnoreReport(id) {
     const { error } = await supabase.from('reports').delete().eq('id', id);
 
@@ -199,6 +244,17 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
               );
             })}
           </div>
+          {activeTab === 'posts' ? (
+            <div className="mt-4">
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t.adminSearchPlaceholder}
+                className="w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-[#16A34A]"
+              />
+            </div>
+          ) : null}
         </div>
 
         {isLoading ? (
@@ -208,8 +264,8 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
         ) : null}
 
         {!isLoading && activeTab === 'posts' ? (
-          posts.length > 0 ? (
-            posts.map((post) => (
+          filteredPosts.length > 0 ? (
+            filteredPosts.map((post) => (
               <article
                 key={post.id}
                 className="rounded-[28px] border border-slate-800 bg-slate-900 p-4 shadow-soft"
@@ -244,17 +300,19 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleHidePost(post.id)}
+                    onClick={() =>
+                      post.hidden ? handleRestorePost(post.id) : handleHidePost(post.id)
+                    }
                     className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-200"
                   >
-                    {t.adminHidePost}
+                    {post.hidden ? t.adminRestorePost : t.adminHidePost}
                   </button>
                 </div>
               </article>
             ))
           ) : (
             <div className="rounded-[28px] border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400">
-              {t.adminNoPosts}
+              {query.trim() ? t.notFound : t.adminNoPosts}
             </div>
           )
         ) : null}
