@@ -11,7 +11,8 @@ export default function ListingCard({
   onShare,
   isFavorite,
   onToggleFavorite,
-  variant = 'default'
+  variant = 'default',
+  actionSlot = null
 }) {
   const navigate = useNavigate();
   const location = item.location?.trim() || '';
@@ -116,6 +117,8 @@ export default function ListingCard({
             )}
             <span className="shrink-0">{createdAt ? formatDate(createdAt, language) : ''}</span>
           </div>
+
+          {actionSlot ? <div className="relative z-10">{actionSlot}</div> : null}
         </div>
       </article>
     );

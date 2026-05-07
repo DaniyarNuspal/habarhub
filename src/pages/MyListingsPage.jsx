@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import ListingImage from '../components/ListingImage';
+import ListingCard from '../components/ListingCard';
 import LogoMark from '../components/LogoMark';
 import { translations } from '../i18n/translations';
 import { getUserId } from '../utils/user';
-import { formatDate, formatPrice } from '../utils/format';
 
 function isUserListing(item, currentUserId) {
   return item.userId === currentUserId;
@@ -75,11 +74,22 @@ export default function MyListingsPage({
   const labels = {
     home: t.home,
     my: t.my,
-    publish: t.publish
+    publish: t.publish,
+    all: t.all,
+    housing: t.housing,
+    jobs: t.jobs,
+    services: t.services,
+    market: t.market,
+    'route-car': language === 'zh' ? '拼车' : t['route-car'],
+    business: t.business,
+    share: t.share,
+    favorite: t.favorite,
+    details: t.details,
+    priceLabel: t.priceLabel
   };
 
   function handleDelete(id) {
-    const listing = listings.find((item) => item.id === id);
+    const listing = listings.find((item) => String(item.id) === String(id));
     if (!listing || listing.userId !== getUserId()) {
       window.alert('无权限');
       return;
@@ -99,7 +109,7 @@ export default function MyListingsPage({
   ];
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-100">
+    <div className="mx-auto flex min-h-screen w-full max-w-[1560px] flex-col bg-slate-100">
       {toastMessage ? (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-30 mx-auto flex max-w-md justify-center px-4">
           <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-soft">
@@ -108,24 +118,33 @@ export default function MyListingsPage({
         </div>
       ) : null}
 
-      <main className="flex-1 px-4 pb-8 pt-5">
-        <section className="rounded-[32px] bg-hero px-5 pb-6 pt-5 shadow-soft">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
+      <main className="mx-auto w-full max-w-[1560px] flex-1 px-4 pb-32 pt-5 sm:px-5 lg:px-6">
+        <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-4 pt-4 shadow-soft">
+          <div className="absolute -right-16 -top-10 h-44 w-44 rounded-full bg-[#16A34A]/10 blur-3xl" />
+          <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-amber-200/25 blur-2xl" />
+
+          <div className="relative space-y-3">
+            <div className="absolute right-0 top-0 z-30">
+              <LanguageSwitcher current={language} onChange={onLanguageChange} />
+            </div>
+
+            <div className="min-w-0">
               <LogoMark />
-              <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">
+              <p className="mt-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
+                HabarHub Space
+              </p>
+              <h1 className="mt-2.5 pr-2 text-[28px] font-black leading-[1.05] tracking-tight text-slate-900">
                 {t.myListingsTitle}
               </h1>
-              <p className="mt-2 max-w-xs text-sm leading-6 text-slate-600">
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
                 {t.myListingsSubtitle}
               </p>
             </div>
-            <LanguageSwitcher current={language} onChange={onLanguageChange} />
           </div>
         </section>
 
         <section className="mt-6 space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-[24px] bg-white p-2 shadow-soft">
+          <div className="inline-grid grid-cols-2 gap-2 rounded-[24px] bg-white p-2 shadow-soft">
             {tabs.map((tab) => {
               const active = tab.id === activeTab;
 
@@ -135,9 +154,7 @@ export default function MyListingsPage({
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                    active
-                      ? 'bg-[#16A34A] text-white'
-                      : 'bg-transparent text-slate-500'
+                    active ? 'bg-[#16A34A] text-white' : 'bg-transparent text-slate-500'
                   }`}
                 >
                   {tab.label}
@@ -148,66 +165,42 @@ export default function MyListingsPage({
 
           {activeTab === 'listings' ? (
             myListings.length > 0 ? (
-              myListings.map((item) => (
-                <article
-                  key={item.id}
-                  className="overflow-hidden rounded-[28px] bg-white shadow-soft"
-                >
-                  <div className="flex gap-4 p-4">
-                    <ListingImage
-                      src={item.images?.[0] || item.image}
-                      category={item.category}
-                      alt={item.title[language]}
-                      className="h-24 w-24 rounded-[20px] object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="truncate text-base font-bold text-slate-900">
-                            {item.title[language]}
-                          </h2>
-                          <p className="mt-1 text-xs font-medium text-[#16A34A]">
-                            {item.location?.trim() || t.locationMissing}
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-amber-50 px-3 py-2 text-right">
-                          <p className="text-sm font-extrabold text-amber-900">
-                            {formatPrice(item.price, item.currency, language)}
-                          </p>
-                        </div>
+              <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
+                {myListings.map((item) => (
+                  <ListingCard
+                    key={item.id}
+                    isFavorite={favorites.some(
+                      (favoriteId) => String(favoriteId) === String(item.id)
+                    )}
+                    item={item}
+                    language={language}
+                    labels={labels}
+                    onShare={() => {}}
+                    onToggleFavorite={onToggleFavorite}
+                    variant="compact"
+                    actionSlot={
+                      <div
+                        className="mt-1 flex items-center gap-2"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Link
+                          to={`/edit/${item.id}`}
+                          className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600"
+                        >
+                          {t.edit}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          className="inline-flex flex-1 items-center justify-center rounded-2xl bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600"
+                        >
+                          {t.delete}
+                        </button>
                       </div>
-                      <p className="mt-2 max-h-12 overflow-hidden text-sm leading-6 text-slate-500">
-                        {item.description[language]}
-                      </p>
-                      <p className="mt-2 text-xs text-slate-400">
-                        {formatDate(item.createdAt || item.postedAt, language)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3 border-t border-slate-100 px-4 py-4">
-                    <Link
-                      to={`/listing/${item.id}`}
-                      className="rounded-2xl bg-[#16A34A] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[#15803D]"
-                    >
-                      {t.details}
-                    </Link>
-                    <Link
-                      to={`/edit/${item.id}`}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-700"
-                    >
-                      {t.edit}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(item.id)}
-                      className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600"
-                    >
-                      {t.delete}
-                    </button>
-                  </div>
-                </article>
-              ))
+                    }
+                  />
+                ))}
+              </div>
             ) : (
               <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">{t.noMyListings}</p>
@@ -220,60 +213,22 @@ export default function MyListingsPage({
               </div>
             )
           ) : favoriteListings.length > 0 ? (
-            favoriteListings.map((item) => (
-              <article
-                key={item.id}
-                className="overflow-hidden rounded-[28px] bg-white shadow-soft"
-              >
-                <div className="flex gap-4 p-4">
-                  <ListingImage
-                    src={item.images?.[0] || item.image}
-                    category={item.category}
-                    alt={item.title[language]}
-                    className="h-24 w-24 rounded-[20px] object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="truncate text-base font-bold text-slate-900">
-                          {item.title[language]}
-                        </h2>
-                        <p className="mt-1 text-xs font-medium text-[#16A34A]">
-                          {item.location?.trim() || t.locationMissing}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-amber-50 px-3 py-2 text-right">
-                        <p className="text-sm font-extrabold text-amber-900">
-                          {formatPrice(item.price, item.currency, language)}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="mt-2 max-h-12 overflow-hidden text-sm leading-6 text-slate-500">
-                      {item.description[language]}
-                    </p>
-                    <p className="mt-2 text-xs text-slate-400">
-                      {formatDate(item.createdAt || item.postedAt, language)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 border-t border-slate-100 px-4 py-4">
-                  <Link
-                    to={`/listing/${item.id}`}
-                    className="rounded-2xl bg-[#16A34A] px-4 py-3 text-center text-sm font-semibold text-white hover:bg-[#15803D]"
-                  >
-                    {t.details}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => onToggleFavorite(item.id)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
-                  >
-                    {t.unfavorite}
-                  </button>
-                </div>
-              </article>
-            ))
+            <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
+              {favoriteListings.map((item) => (
+                <ListingCard
+                  key={item.id}
+                  isFavorite={favorites.some(
+                    (favoriteId) => String(favoriteId) === String(item.id)
+                  )}
+                  item={item}
+                  language={language}
+                  labels={labels}
+                  onShare={() => {}}
+                  onToggleFavorite={onToggleFavorite}
+                  variant="compact"
+                />
+              ))}
+            </div>
           ) : (
             <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
               <p className="text-sm text-slate-500">{t.noFavorites}</p>
