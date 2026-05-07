@@ -1,5 +1,5 @@
 import { HiHeart, HiOutlineHeart } from 'react-icons/hi2';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaWhatsapp } from 'react-icons/fa';
 import ListingImage from './ListingImage';
 import { formatDate, formatPrice } from '../utils/format';
@@ -13,6 +13,7 @@ export default function ListingCard({
   onToggleFavorite,
   variant = 'default'
 }) {
+  const navigate = useNavigate();
   const location = item.location?.trim() || '';
   const tags = Array.isArray(item.tags) ? item.tags : [];
   const createdAt = item.createdAt || item.postedAt;
@@ -24,12 +25,19 @@ export default function ListingCard({
 
   if (isCompact) {
     return (
-      <article className="group relative mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5">
-        <Link
-          to={`/listing/${item.id}`}
-          aria-label={title}
-          className="absolute inset-0 z-0"
-        />
+      <article
+        className="group relative mb-3 inline-block w-full cursor-pointer break-inside-avoid overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5"
+        onClick={() => navigate(`/listing/${item.id}`)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            navigate(`/listing/${item.id}`);
+          }
+        }}
+        role="link"
+        tabIndex={0}
+        aria-label={title}
+      >
         {hasImage ? (
           <div className="relative aspect-square overflow-hidden bg-slate-100">
             <ListingImage
@@ -44,7 +52,10 @@ export default function ListingCard({
               </span>
               <button
                 type="button"
-                onClick={() => onToggleFavorite(item.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleFavorite(item.id);
+                }}
                 className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/92 text-rose-500 shadow-sm backdrop-blur"
                 aria-label={labels.favorite}
                 title={labels.favorite}
@@ -64,7 +75,10 @@ export default function ListingCard({
             </span>
             <button
               type="button"
-              onClick={() => onToggleFavorite(item.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite(item.id);
+              }}
               className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
               aria-label={labels.favorite}
               title={labels.favorite}
