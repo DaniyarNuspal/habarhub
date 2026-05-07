@@ -24,7 +24,7 @@ export default function LanguageSwitcher({ current, onChange }) {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative w-24 max-w-[96px] shrink-0">
+    <div ref={containerRef} className="relative z-40 w-24 max-w-[96px] shrink-0">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -37,7 +37,7 @@ export default function LanguageSwitcher({ current, onChange }) {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-full max-w-[96px] overflow-hidden rounded-2xl bg-white py-1.5 shadow-soft">
+        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-full max-w-[96px] overflow-hidden rounded-2xl bg-white py-1.5 shadow-soft">
           {languages.map((language) => {
             const active = language === current;
 

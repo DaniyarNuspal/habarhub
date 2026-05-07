@@ -97,7 +97,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col bg-slate-100">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-slate-100">
       {toastMessage ? (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-30 mx-auto flex max-w-md justify-center px-4">
           <div className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-soft">
@@ -106,19 +106,23 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
         </div>
       ) : null}
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-8">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-32">
         <section className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-5 pb-4 pt-4 shadow-soft">
           <div className="absolute -right-16 -top-10 h-44 w-44 rounded-full bg-[#16A34A]/10 blur-3xl" />
           <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-amber-200/25 blur-2xl" />
 
           <div className="relative space-y-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
+            <div className="absolute right-0 top-0 z-30">
+              <LanguageSwitcher current={language} onChange={onLanguageChange} />
+            </div>
+
+            <div className="pr-0">
+              <div className="min-w-0">
                 <LogoMark />
                 <p className="mt-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#16A34A]">
                   {t.slogan}
                 </p>
-                <h1 className="mt-2.5 text-[28px] font-black leading-[1.05] tracking-tight text-slate-900">
+                <h1 className="mt-2.5 pr-2 text-[28px] font-black leading-[1.05] tracking-tight text-slate-900">
                   {t.greeting}
                 </h1>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -132,7 +136,6 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                   </div>
                 </div>
               </div>
-              <LanguageSwitcher current={language} onChange={onLanguageChange} />
             </div>
 
             <div className="pt-0.5">

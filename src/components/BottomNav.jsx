@@ -10,7 +10,7 @@ export default function BottomNav({ labels }) {
   ];
 
   return (
-    <nav className="sticky bottom-0 bg-[#16A34A] px-5 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 backdrop-blur">
+    <nav className="sticky bottom-0 z-30 border-t border-white/15 bg-[#16A34A]/95 px-5 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 shadow-[0_-10px_30px_rgba(15,23,42,0.14)] backdrop-blur-xl">
       <div className="mx-auto max-w-md">
         <div className="grid grid-cols-3 items-end">
           {items.map((item) => {
