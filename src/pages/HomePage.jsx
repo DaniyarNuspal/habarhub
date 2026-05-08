@@ -4,6 +4,7 @@ import BottomNav from '../components/BottomNav';
 import CategoryTabs from '../components/CategoryTabs';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ListingCard from '../components/ListingCard';
+import MasonryGrid from '../components/MasonryGrid';
 import LogoMark from '../components/LogoMark';
 import SearchBar from '../components/SearchBar';
 import { translations } from '../i18n/translations';
@@ -191,22 +192,27 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+          <div>
             {filteredListings.length > 0 ? (
-              filteredListings.map((item) => (
-                <ListingCard
-                  key={item.id}
-                  isFavorite={favorites.some((favoriteId) => String(favoriteId) === String(item.id))}
-                  item={item}
-                  language={language}
-                  labels={labels}
-                  onShare={handleShare}
-                  onToggleFavorite={onToggleFavorite}
-                  variant="compact-grid"
-                />
-              ))
+              <MasonryGrid
+                items={filteredListings}
+                renderItem={(item) => (
+                  <ListingCard
+                    key={item.id}
+                    isFavorite={favorites.some(
+                      (favoriteId) => String(favoriteId) === String(item.id)
+                    )}
+                    item={item}
+                    language={language}
+                    labels={labels}
+                    onShare={handleShare}
+                    onToggleFavorite={onToggleFavorite}
+                    variant="compact-grid"
+                  />
+                )}
+              />
             ) : (
-              <div className="col-span-full rounded-[28px] bg-white p-8 text-center shadow-soft">
+              <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">
                   {normalizedQuery ? t.noSearchResults : t.notFound}
                 </p>
