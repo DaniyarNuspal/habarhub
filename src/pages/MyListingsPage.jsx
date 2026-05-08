@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ListingCard from '../components/ListingCard';
+import MasonryGrid from '../components/MasonryGrid';
 import LogoMark from '../components/LogoMark';
 import { translations } from '../i18n/translations';
 import { getUserId } from '../utils/user';
@@ -165,8 +166,9 @@ export default function MyListingsPage({
 
           {activeTab === 'listings' ? (
             myListings.length > 0 ? (
-              <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
-                {myListings.map((item) => (
+              <MasonryGrid
+                items={myListings}
+                renderItem={(item) => (
                   <ListingCard
                     key={item.id}
                     isFavorite={favorites.some(
@@ -199,8 +201,8 @@ export default function MyListingsPage({
                       </div>
                     }
                   />
-                ))}
-              </div>
+                )}
+              />
             ) : (
               <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">{t.noMyListings}</p>
@@ -213,8 +215,9 @@ export default function MyListingsPage({
               </div>
             )
           ) : favoriteListings.length > 0 ? (
-            <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
-              {favoriteListings.map((item) => (
+            <MasonryGrid
+              items={favoriteListings}
+              renderItem={(item) => (
                 <ListingCard
                   key={item.id}
                   isFavorite={favorites.some(
@@ -227,8 +230,8 @@ export default function MyListingsPage({
                   onToggleFavorite={onToggleFavorite}
                   variant="compact"
                 />
-              ))}
-            </div>
+              )}
+            />
           ) : (
             <div className="rounded-[28px] bg-white p-8 text-center shadow-soft">
               <p className="text-sm text-slate-500">{t.noFavorites}</p>
