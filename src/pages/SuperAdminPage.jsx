@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { translations } from '../i18n/translations';
 import { formatDate } from '../utils/format';
 
-const ADMIN_PASSWORD = 'HabarHub_9527_Admin';
+const ADMIN_PASSWORD = '85208520ffff';
 const ADMIN_SESSION_KEY = 'habarhub:super-admin-auth';
 
 function toDisplayTitle(value) {
