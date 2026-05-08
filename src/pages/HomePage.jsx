@@ -191,7 +191,7 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
             </span>
           </div>
 
-          <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
             {filteredListings.length > 0 ? (
               filteredListings.map((item) => (
                 <ListingCard
@@ -202,11 +202,11 @@ export default function HomePage({ favorites, language, listings, onLanguageChan
                   labels={labels}
                   onShare={handleShare}
                   onToggleFavorite={onToggleFavorite}
-                  variant="compact"
+                  variant="compact-grid"
                 />
               ))
             ) : (
-              <div className="mb-3 break-inside-avoid rounded-[28px] bg-white p-8 text-center shadow-soft">
+              <div className="col-span-full rounded-[28px] bg-white p-8 text-center shadow-soft">
                 <p className="text-sm text-slate-500">
                   {normalizedQuery ? t.noSearchResults : t.notFound}
                 </p>
