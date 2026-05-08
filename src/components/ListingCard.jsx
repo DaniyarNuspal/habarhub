@@ -23,6 +23,102 @@ export default function ListingCard({
     typeof item.description === 'string' ? item.description : item.description?.[language];
   const hasImage = Boolean(item.images?.[0] || item.image);
   const isCompact = variant === 'compact';
+  const isRelated = variant === 'related';
+
+  if (isRelated) {
+    return (
+      <article
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5"
+        onClick={() => navigate(`/listing/${item.id}`)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            navigate(`/listing/${item.id}`);
+          }
+        }}
+        role="link"
+        tabIndex={0}
+        aria-label={title}
+      >
+        {hasImage ? (
+          <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+            <ListingImage
+              src={item.images?.[0] || item.image}
+              category={item.category}
+              alt={title}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+            <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+              <span className="max-w-[72%] truncate rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold text-[#16A34A] backdrop-blur">
+                {labels[item.category]}
+              </span>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleFavorite(item.id);
+                }}
+                className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/92 text-rose-500 shadow-sm backdrop-blur"
+                aria-label={labels.favorite}
+                title={labels.favorite}
+              >
+                {isFavorite ? (
+                  <HiHeart className="text-[16px]" aria-hidden="true" />
+                ) : (
+                  <HiOutlineHeart className="text-[16px]" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-2 px-3 pb-0 pt-3">
+            <span className="max-w-[72%] truncate rounded-full bg-[#16A34A]/10 px-2.5 py-1 text-[10px] font-semibold text-[#16A34A]">
+              {labels[item.category]}
+            </span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleFavorite(item.id);
+              }}
+              className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-rose-500"
+              aria-label={labels.favorite}
+              title={labels.favorite}
+            >
+              {isFavorite ? (
+                <HiHeart className="text-[16px]" aria-hidden="true" />
+              ) : (
+                <HiOutlineHeart className="text-[16px]" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        )}
+
+        <div className={`flex flex-1 flex-col gap-2 px-3 pb-3 ${hasImage ? 'pt-3' : 'pt-2'}`}>
+          <h3 className="line-clamp-2 min-h-[2.625rem] text-sm font-bold leading-[1.35] text-slate-900">
+            {title}
+          </h3>
+
+          <div className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-900 ring-1 ring-amber-100">
+            {formatPrice(item.price, item.currency || 'KZT', language)}
+          </div>
+
+          <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-slate-400">
+            {location ? (
+              <span className="min-w-0 max-w-[58%] truncate rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-500">
+                {location}
+              </span>
+            ) : (
+              <span />
+            )}
+            <span className="shrink-0">{createdAt ? formatDate(createdAt, language) : ''}</span>
+          </div>
+
+          {actionSlot ? <div className="relative z-10">{actionSlot}</div> : null}
+        </div>
+      </article>
+    );
+  }
 
   if (isCompact) {
     return (

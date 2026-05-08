@@ -584,7 +584,7 @@ export default function ListingDetailPage({
               <p className="mt-1 text-sm text-slate-500">{t.relatedSubtitle}</p>
             </div>
 
-            <div className="columns-2 gap-3 lg:columns-3 xl:columns-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
               {relatedListings.map((entry) => (
                 <ListingCard
                   key={entry.id}
@@ -596,7 +596,7 @@ export default function ListingDetailPage({
                     (favoriteId) => String(favoriteId) === String(entry.id)
                   )}
                   onToggleFavorite={onToggleFavorite}
-                  variant="compact"
+                  variant="related"
                 />
               ))}
             </div>
