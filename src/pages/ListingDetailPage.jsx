@@ -584,7 +584,7 @@ export default function ListingDetailPage({
               <p className="mt-1 text-sm text-slate-500">{t.relatedSubtitle}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3">
               {relatedListings.map((entry) => (
                 <ListingCard
                   key={entry.id}
