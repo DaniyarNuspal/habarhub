@@ -23,6 +23,7 @@ export default function ListingCard({
     typeof item.description === 'string' ? item.description : item.description?.[language];
   const hasImage = Boolean(item.images?.[0] || item.image);
   const isCompact = variant === 'compact';
+  const isCompactGrid = variant === 'compact-grid';
   const isRelated = variant === 'related';
 
   if (isRelated) {
@@ -120,10 +121,12 @@ export default function ListingCard({
     );
   }
 
-  if (isCompact) {
+  if (isCompact || isCompactGrid) {
     return (
       <article
-        className="group relative mb-3 inline-block w-full cursor-pointer break-inside-avoid overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5"
+        className={`group relative w-full cursor-pointer overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(15,23,42,0.07)] transition-transform duration-200 hover:-translate-y-0.5 ${
+          isCompact ? 'mb-3 inline-block break-inside-avoid' : 'flex h-full flex-col'
+        }`}
         onClick={() => navigate(`/listing/${item.id}`)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {

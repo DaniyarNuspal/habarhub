@@ -165,7 +165,7 @@ export default function MyListingsPage({
 
           {activeTab === 'listings' ? (
             myListings.length > 0 ? (
-              <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
+              <div className="grid grid-cols-2 gap-3">
                 {myListings.map((item) => (
                   <ListingCard
                     key={item.id}
@@ -177,7 +177,7 @@ export default function MyListingsPage({
                     labels={labels}
                     onShare={() => {}}
                     onToggleFavorite={onToggleFavorite}
-                    variant="compact"
+                    variant="compact-grid"
                     actionSlot={
                       <div
                         className="mt-1 flex items-center gap-2"
@@ -213,7 +213,7 @@ export default function MyListingsPage({
               </div>
             )
           ) : favoriteListings.length > 0 ? (
-            <div className="columns-2 gap-3 md:columns-3 xl:columns-4">
+            <div className="grid grid-cols-2 gap-3">
               {favoriteListings.map((item) => (
                 <ListingCard
                   key={item.id}
@@ -225,7 +225,7 @@ export default function MyListingsPage({
                   labels={labels}
                   onShare={() => {}}
                   onToggleFavorite={onToggleFavorite}
-                  variant="compact"
+                  variant="compact-grid"
                 />
               ))}
             </div>
