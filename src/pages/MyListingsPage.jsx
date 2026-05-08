@@ -165,7 +165,7 @@ export default function MyListingsPage({
 
           {activeTab === 'listings' ? (
             myListings.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,minmax(160px,220px))]">
                 {myListings.map((item) => (
                   <ListingCard
                     key={item.id}
@@ -213,7 +213,7 @@ export default function MyListingsPage({
               </div>
             )
           ) : favoriteListings.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid justify-center gap-3 [grid-template-columns:repeat(auto-fill,minmax(160px,220px))]">
               {favoriteListings.map((item) => (
                 <ListingCard
                   key={item.id}
