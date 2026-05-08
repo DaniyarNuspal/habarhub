@@ -22,6 +22,42 @@ function isHiddenPost(post) {
   return Boolean(post?.hidden || post?.is_hidden || post?.status === 'hidden');
 }
 
+function getDeletePayload(post) {
+  const payload = {};
+
+  if (Object.prototype.hasOwnProperty.call(post, 'is_deleted')) {
+    payload.is_deleted = true;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(post, 'deleted_at')) {
+    payload.deleted_at = new Date().toISOString();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(post, 'status')) {
+    payload.status = 'deleted';
+  }
+
+  return payload;
+}
+
+function getRestoreDeletedPayload(post) {
+  const payload = {};
+
+  if (Object.prototype.hasOwnProperty.call(post, 'is_deleted')) {
+    payload.is_deleted = false;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(post, 'deleted_at')) {
+    payload.deleted_at = null;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(post, 'status')) {
+    payload.status = isHiddenPost(post) ? 'hidden' : 'active';
+  }
+
+  return payload;
+}
+
 export default function SuperAdminPage({ language, onRefreshListings }) {
   const t = translations[language];
   const [password, setPassword] = useState('');
@@ -174,56 +210,53 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     }
 
     const targetPost = posts.find((item) => String(item.id) === String(id));
-    const supportsSoftDelete =
-      targetPost &&
-      (Object.prototype.hasOwnProperty.call(targetPost, 'is_deleted') ||
-        Object.prototype.hasOwnProperty.call(targetPost, 'deleted_at') ||
-        Object.prototype.hasOwnProperty.call(targetPost, 'status'));
-
-    if (supportsSoftDelete) {
-      const deletePayload = {};
-
-      if (Object.prototype.hasOwnProperty.call(targetPost, 'is_deleted')) {
-        deletePayload.is_deleted = true;
-      }
-
-      if (Object.prototype.hasOwnProperty.call(targetPost, 'deleted_at')) {
-        deletePayload.deleted_at = new Date().toISOString();
-      }
-
-      if (Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
-        deletePayload.status = 'deleted';
-      }
-
-      const { error } = await supabase.from('posts').update(deletePayload).eq('id', id);
-
-      if (error) {
-        console.error('Admin soft delete failed:', error);
-        showToast(error.message || t.adminActionError, 'error');
-        return;
-      }
-
-      setPosts((current) =>
-        current.map((item) =>
-          String(item.id) === String(id)
-            ? { ...item, ...deletePayload }
-            : item
-        )
-      );
-    } else {
-      const { error } = await supabase.from('posts').delete().eq('id', id);
-
-      if (error) {
-        console.error('Admin delete failed:', error);
-        showToast(error.message || t.adminActionError, 'error');
-        return;
-      }
-
-      setPosts((current) => current.filter((item) => String(item.id) !== String(id)));
+    if (!targetPost) {
+      showToast(t.adminActionError, 'error');
+      return;
     }
 
+    const deletePayload = getDeletePayload(targetPost);
+
+    if (!Object.keys(deletePayload).length) {
+      console.error('Admin soft delete failed: no soft-delete columns found on posts row');
+      showToast(t.adminSoftDeleteConfigError || t.adminActionError, 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('posts').update(deletePayload).eq('id', id);
+
+    if (error) {
+      console.error('Admin soft delete failed:', error);
+      showToast(error.message || t.adminActionError, 'error');
+      return;
+    }
+
+    setPosts((current) =>
+      current.map((item) =>
+        String(item.id) === String(id) ? { ...item, ...deletePayload } : item
+      )
+    );
     setReports((current) => current.filter((item) => String(item.post_id) !== String(id)));
     showToast(t.adminActionSuccessDelete);
+    await onRefreshListings?.();
+  }
+
+  async function handlePermanentlyDeletePost(id) {
+    if (!window.confirm(t.adminPermanentDeleteConfirm || t.deleteConfirm)) {
+      return;
+    }
+
+    const { error } = await supabase.from('posts').delete().eq('id', id);
+
+    if (error) {
+      console.error('Admin permanent delete failed:', error);
+      showToast(error.message || t.adminActionError, 'error');
+      return;
+    }
+
+    setPosts((current) => current.filter((item) => String(item.id) !== String(id)));
+    setReports((current) => current.filter((item) => String(item.post_id) !== String(id)));
+    showToast(t.adminActionSuccessPermanentDelete || t.adminActionSuccessDelete);
     await onRefreshListings?.();
   }
 
@@ -258,13 +291,20 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
   async function handleRestorePost(id) {
     const targetPost = posts.find((item) => String(item.id) === String(id));
-    const restorePayload = { hidden: false };
+    if (!targetPost) {
+      showToast(t.adminActionError, 'error');
+      return;
+    }
 
-    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'is_hidden')) {
+    const restorePayload = isDeletedPost(targetPost)
+      ? getRestoreDeletedPayload(targetPost)
+      : { hidden: false };
+
+    if (!isDeletedPost(targetPost) && Object.prototype.hasOwnProperty.call(targetPost, 'is_hidden')) {
       restorePayload.is_hidden = false;
     }
 
-    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
+    if (!isDeletedPost(targetPost) && Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
       restorePayload.status = 'active';
     }
 
@@ -490,20 +530,30 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
                   <div className="mt-5 grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => handleDeletePost(post.id)}
+                      onClick={() =>
+                        isDeletedPost(post)
+                          ? handlePermanentlyDeletePost(post.id)
+                          : handleDeletePost(post.id)
+                      }
                       className="rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white"
                     >
-                      {t.adminDeletePost}
+                      {isDeletedPost(post)
+                        ? t.adminPermanentDelete || t.adminDeletePost
+                        : t.adminDeletePost}
                     </button>
                     <button
                       type="button"
                       onClick={() =>
                         isHiddenPost(post) ? handleRestorePost(post.id) : handleHidePost(post.id)
                       }
-                      disabled={isDeletedPost(post)}
+                      disabled={false}
                       className="rounded-2xl border border-[#16A34A]/20 bg-[#16A34A]/5 px-4 py-3 text-sm font-semibold text-[#16A34A]"
                     >
-                      {isHiddenPost(post) ? t.adminRestorePost : t.adminHidePost}
+                      {isDeletedPost(post)
+                        ? t.adminRestorePost
+                        : isHiddenPost(post)
+                          ? t.adminRestorePost
+                          : t.adminHidePost}
                     </button>
                   </div>
                 </article>

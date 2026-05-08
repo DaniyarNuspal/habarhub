@@ -54,6 +54,10 @@ function toLocalizedText(value) {
   };
 }
 
+function isDeletedPost(item) {
+  return Boolean(item?.is_deleted || item?.deleted_at || item?.status === 'deleted');
+}
+
 function mapPostToListing(item) {
   return {
     ...item,
@@ -73,6 +77,9 @@ function mapPostToListing(item) {
     phone: item.phone || '',
     whatsapp: item.whatsapp || '',
     currency: item.currency || '₸',
+    is_deleted: Boolean(item.is_deleted),
+    deleted_at: item.deleted_at || null,
+    status: item.status || null,
     userId: item.userId || item.user_id || '',
     isUserCreated: Boolean(item.isUserCreated || item.userId || item.user_id),
     featured: Boolean(item.featured)
@@ -130,7 +137,7 @@ export default function ListingDetailPage({
         return;
       }
 
-      if (error || !data || data.hidden) {
+      if (error || !data || data.hidden || isDeletedPost(data)) {
         if (error) {
           console.warn('Failed to fetch listing detail:', error);
         }
@@ -232,7 +239,8 @@ export default function ListingDetailPage({
       (entry) =>
         String(entry.id) !== String(item.id) &&
         entry.category === item.category &&
-        !entry.hidden
+        !entry.hidden &&
+        !isDeletedPost(entry)
     )
     .sort(
       (a, b) =>

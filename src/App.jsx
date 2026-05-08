@@ -32,6 +32,10 @@ function toLocalizedText(value) {
   };
 }
 
+function isDeletedPost(item) {
+  return Boolean(item?.is_deleted || item?.deleted_at || item?.status === 'deleted');
+}
+
 export default function App() {
   const [listings, setListings] = useState([]);
   const [currentUserId] = useState(() => getUserId());
@@ -84,6 +88,9 @@ export default function App() {
       currency: item.currency || '₸',
       userId: item.userId || item.user_id || currentUserId,
       hidden: Boolean(item.hidden),
+      is_deleted: Boolean(item.is_deleted),
+      deleted_at: item.deleted_at || null,
+      status: item.status || null,
       isUserCreated: Boolean(item.isUserCreated || item.userId || item.user_id),
       featured: Boolean(item.featured)
     }),
@@ -103,7 +110,7 @@ export default function App() {
 
     setListings(
       (data || [])
-        .filter((item) => !item?.hidden)
+        .filter((item) => !item?.hidden && !isDeletedPost(item))
         .map((item) => mapPostToListing(item))
     );
 
