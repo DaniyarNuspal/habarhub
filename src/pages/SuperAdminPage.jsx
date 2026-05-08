@@ -14,6 +14,14 @@ function toDisplayTitle(value) {
   return value || '';
 }
 
+function isDeletedPost(post) {
+  return Boolean(post?.is_deleted || post?.deleted_at || post?.status === 'deleted');
+}
+
+function isHiddenPost(post) {
+  return Boolean(post?.hidden || post?.is_hidden || post?.status === 'hidden');
+}
+
 export default function SuperAdminPage({ language, onRefreshListings }) {
   const t = translations[language];
   const [password, setPassword] = useState('');
@@ -21,6 +29,7 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     () => window.localStorage.getItem(ADMIN_SESSION_KEY) === 'true'
   );
   const [activeTab, setActiveTab] = useState('posts');
+  const [postFilter, setPostFilter] = useState('normal');
   const [query, setQuery] = useState('');
   const [posts, setPosts] = useState([]);
   const [reports, setReports] = useState([]);
@@ -36,14 +45,39 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
     [t.adminPostsTab, t.adminReportsTab]
   );
 
+  const postFilters = useMemo(
+    () => [
+      { id: 'all', label: t.adminFilterAll },
+      { id: 'normal', label: t.adminFilterNormal },
+      { id: 'hidden', label: t.adminFilterHidden },
+      { id: 'deleted', label: t.adminFilterDeleted }
+    ],
+    [t.adminFilterAll, t.adminFilterDeleted, t.adminFilterHidden, t.adminFilterNormal]
+  );
+
   const filteredPosts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const visiblePosts = posts.filter((post) => {
+      if (postFilter === 'all') {
+        return true;
+      }
+
+      if (postFilter === 'hidden') {
+        return isHiddenPost(post) && !isDeletedPost(post);
+      }
+
+      if (postFilter === 'deleted') {
+        return isDeletedPost(post);
+      }
+
+      return !isHiddenPost(post) && !isDeletedPost(post);
+    });
 
     if (!normalizedQuery) {
-      return posts;
+      return visiblePosts;
     }
 
-    return posts.filter((post) => {
+    return visiblePosts.filter((post) => {
       const categoryLabel = translations[language][post.category] || post.category || '';
       const content = [
         toDisplayTitle(post.title),
@@ -58,7 +92,7 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
 
       return content.includes(normalizedQuery);
     });
-  }, [language, posts, query]);
+  }, [language, postFilter, posts, query]);
 
   useEffect(() => {
     document.title = 'HabarHub - Super Admin';
@@ -139,32 +173,83 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
       return;
     }
 
-    const { error } = await supabase.from('posts').delete().eq('id', id);
+    const targetPost = posts.find((item) => String(item.id) === String(id));
+    const supportsSoftDelete =
+      targetPost &&
+      (Object.prototype.hasOwnProperty.call(targetPost, 'is_deleted') ||
+        Object.prototype.hasOwnProperty.call(targetPost, 'deleted_at') ||
+        Object.prototype.hasOwnProperty.call(targetPost, 'status'));
 
-    if (error) {
-      console.error('Admin delete failed:', error);
-      showToast(t.adminActionError, 'error');
-      return;
+    if (supportsSoftDelete) {
+      const deletePayload = {};
+
+      if (Object.prototype.hasOwnProperty.call(targetPost, 'is_deleted')) {
+        deletePayload.is_deleted = true;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(targetPost, 'deleted_at')) {
+        deletePayload.deleted_at = new Date().toISOString();
+      }
+
+      if (Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
+        deletePayload.status = 'deleted';
+      }
+
+      const { error } = await supabase.from('posts').update(deletePayload).eq('id', id);
+
+      if (error) {
+        console.error('Admin soft delete failed:', error);
+        showToast(error.message || t.adminActionError, 'error');
+        return;
+      }
+
+      setPosts((current) =>
+        current.map((item) =>
+          String(item.id) === String(id)
+            ? { ...item, ...deletePayload }
+            : item
+        )
+      );
+    } else {
+      const { error } = await supabase.from('posts').delete().eq('id', id);
+
+      if (error) {
+        console.error('Admin delete failed:', error);
+        showToast(error.message || t.adminActionError, 'error');
+        return;
+      }
+
+      setPosts((current) => current.filter((item) => String(item.id) !== String(id)));
     }
 
-    setPosts((current) => current.filter((item) => String(item.id) !== String(id)));
     setReports((current) => current.filter((item) => String(item.post_id) !== String(id)));
     showToast(t.adminActionSuccessDelete);
     await onRefreshListings?.();
   }
 
   async function handleHidePost(id) {
-    const { error } = await supabase.from('posts').update({ hidden: true }).eq('id', id);
+    const targetPost = posts.find((item) => String(item.id) === String(id));
+    const hidePayload = { hidden: true };
+
+    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'is_hidden')) {
+      hidePayload.is_hidden = true;
+    }
+
+    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
+      hidePayload.status = 'hidden';
+    }
+
+    const { error } = await supabase.from('posts').update(hidePayload).eq('id', id);
 
     if (error) {
       console.error('Admin hide failed:', error);
-      showToast(t.adminActionError, 'error');
+      showToast(error.message || t.adminActionError, 'error');
       return;
     }
 
     setPosts((current) =>
       current.map((item) =>
-        String(item.id) === String(id) ? { ...item, hidden: true } : item
+        String(item.id) === String(id) ? { ...item, ...hidePayload } : item
       )
     );
     showToast(t.adminActionSuccessHide);
@@ -172,17 +257,28 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
   }
 
   async function handleRestorePost(id) {
-    const { error } = await supabase.from('posts').update({ hidden: false }).eq('id', id);
+    const targetPost = posts.find((item) => String(item.id) === String(id));
+    const restorePayload = { hidden: false };
+
+    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'is_hidden')) {
+      restorePayload.is_hidden = false;
+    }
+
+    if (targetPost && Object.prototype.hasOwnProperty.call(targetPost, 'status')) {
+      restorePayload.status = 'active';
+    }
+
+    const { error } = await supabase.from('posts').update(restorePayload).eq('id', id);
 
     if (error) {
       console.error('Admin restore failed:', error);
-      showToast(t.adminActionError, 'error');
+      showToast(error.message || t.adminActionError, 'error');
       return;
     }
 
     setPosts((current) =>
       current.map((item) =>
-        String(item.id) === String(id) ? { ...item, hidden: false } : item
+        String(item.id) === String(id) ? { ...item, ...restorePayload } : item
       )
     );
     showToast(t.adminActionSuccessRestore);
@@ -318,7 +414,25 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
           </div>
 
           {activeTab === 'posts' ? (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-2 rounded-[22px] bg-white p-2 shadow-soft md:grid-cols-4">
+                {postFilters.map((filter) => {
+                  const active = filter.id === postFilter;
+
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setPostFilter(filter.id)}
+                      className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                        active ? 'bg-[#16A34A] text-white' : 'text-slate-500'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
               <input
                 type="search"
                 value={query}
@@ -346,11 +460,18 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
                       <h2 className="text-base font-bold leading-6 text-slate-900">
                         {toDisplayTitle(post.title) || '-'}
                       </h2>
-                      {post.hidden ? (
-                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-                          {t.adminHidden}
-                        </span>
-                      ) : null}
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {isDeletedPost(post) ? (
+                          <span className="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-600">
+                            {t.adminFilterDeleted}
+                          </span>
+                        ) : null}
+                        {isHiddenPost(post) && !isDeletedPost(post) ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                            {t.adminHidden}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                     <p className="text-xs text-slate-400">
                       {t.posted}: {formatDate(post.created_at, language)}
@@ -377,11 +498,12 @@ export default function SuperAdminPage({ language, onRefreshListings }) {
                     <button
                       type="button"
                       onClick={() =>
-                        post.hidden ? handleRestorePost(post.id) : handleHidePost(post.id)
+                        isHiddenPost(post) ? handleRestorePost(post.id) : handleHidePost(post.id)
                       }
+                      disabled={isDeletedPost(post)}
                       className="rounded-2xl border border-[#16A34A]/20 bg-[#16A34A]/5 px-4 py-3 text-sm font-semibold text-[#16A34A]"
                     >
-                      {post.hidden ? t.adminRestorePost : t.adminHidePost}
+                      {isHiddenPost(post) ? t.adminRestorePost : t.adminHidePost}
                     </button>
                   </div>
                 </article>
